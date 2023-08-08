@@ -8,6 +8,8 @@ import java.util.stream.Collectors;
 
 import javax.validation.Valid;
 
+import com.example.demo.Repository.FAQRepository;
+import com.example.demo.entity.FAQ;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -51,6 +53,9 @@ public class CustomerController {
   
   @Autowired
   ComplaintRepository complaintRepository;
+
+  @Autowired
+  private FAQRepository faqRepository;
 
   @Autowired
   PasswordEncoder encoder;
@@ -126,6 +131,7 @@ public class CustomerController {
           newComplaint.setDate(new Date());
           newComplaint.setStatus("Pending");
           newComplaint.setDescription(complaint.getDescription());
+          newComplaint.setRating(complaint.getRating());
 
           // Save the new complaint entity to the database
           complaintRepository.save(newComplaint);
@@ -182,30 +188,18 @@ public class CustomerController {
       }
   }
 
+    @GetMapping("/getFaq/{faqId}")
+    public ResponseEntity<?> getFaqById(@PathVariable Long faqId) {
+        FAQ faq = faqRepository.findById(faqId).orElse(null);
 
+        if(faq != null) {
+            return ResponseEntity.ok(faq);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
 
-  
-  /*
-   @PostMapping("/{customerId}/add-complaint")
-   public ResponseEntity<?> addComplaint(@PathVariable Long customerId, @Valid @RequestBody Complaint complaint) {
-    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-    UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
-    Long userId = userDetails.getUserId(); // Get the customer ID from the authenticated user
-    
-   
-    Complaint newComplaint = new Complaint();
-    newComplaint.setComplaintType(complaint.getComplaintType());
-    newComplaint.setCustomerid(customerId);
-    newComplaint.setDate(new Date());
-    newComplaint.setStatus("Pending");
-    newComplaint.setDescription(complaint.getDescription());
+    }
 
-    // Save the new complaint entity to the database
-    complaintRepository.save(newComplaint);
-
-    return ResponseEntity.ok(new MessageResponse("Complaint added successfully!"));
-}
- */
   
 
 }
