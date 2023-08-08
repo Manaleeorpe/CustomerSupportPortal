@@ -5,7 +5,10 @@ import java.util.stream.Collectors;
 
 import javax.validation.Valid;
 
+import com.example.demo.Repository.FAQRepository;
 import com.example.demo.Service.AdminService;
+import com.example.demo.entity.Complaint;
+import com.example.demo.entity.FAQ;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
@@ -35,6 +38,9 @@ public class AdminController {
 
 	  @Autowired
 	  AdminRepository adminRepository;
+
+	  @Autowired
+	  private FAQRepository faqRepository;
 
 	  @Autowired
 	  private AdminService adminService;
@@ -123,5 +129,57 @@ public class AdminController {
 		}
 	}
 
+	@PutMapping("/updateComplaint/{complaintid}")
+	public ResponseEntity<MessageResponse> updateComplaint(@PathVariable Long complaintid, @RequestBody Complaint updatedComplaint) {
+		Complaint existingComplaint = adminService.updateComplaintDetails(complaintid, updatedComplaint);
 
-}
+		if (existingComplaint != null) {
+			return ResponseEntity.ok(new MessageResponse("Complaint details updated successfully"));
+		} else {
+			return ResponseEntity.notFound().build(); //Complaint not found
+		}
+
+
+	}
+
+	@PostMapping("/addFaq")
+	public ResponseEntity<?> addFaq(@RequestBody FAQ faq) {
+
+			// Create a new FAQ entity
+			FAQ newFaq = new FAQ();
+			newFaq.setFaqType(faq.getFaqType());
+			newFaq.setQuestion(faq.getQuestion());
+			newFaq.setAnswer(faq.getAnswer());
+
+			// Save the new FAQ entity to the database
+			faqRepository.save(newFaq);
+
+			return ResponseEntity.ok(new MessageResponse("FAQ added successfully!"));
+
+	}
+
+	@GetMapping("/getFaq/{faqId}")
+	public ResponseEntity<?> getFaqById(@PathVariable Long faqId) {
+		FAQ faq = faqRepository.findById(faqId).orElse(null);
+
+		if(faq != null) {
+			return ResponseEntity.ok(faq);
+		} else {
+			return ResponseEntity.notFound().build();
+		}
+
+	}
+
+	@PutMapping("/updateFaq/{faqId}")
+	public ResponseEntity<MessageResponse> updateFaq(@PathVariable Long faqId, @RequestBody FAQ updatedFAQ) {
+		FAQ existingFAQ = adminService.updateFaqDetails(faqId, updatedFAQ);
+
+		if (existingFAQ != null) {
+			return ResponseEntity.ok(new MessageResponse("FAQ details updated successfully"));
+		} else {
+			return ResponseEntity.notFound().build(); //FAQ not found
+		}
+
+
+	}
+	}
