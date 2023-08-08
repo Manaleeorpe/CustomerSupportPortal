@@ -5,6 +5,7 @@ import java.util.stream.Collectors;
 
 import javax.validation.Valid;
 
+import com.example.demo.Service.AdminService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
@@ -14,13 +15,9 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.example.demo.Repository.AdminRepository;
-import com.example.demo.Repository.ComplaintRepository;
 import com.example.demo.entity.Admin;
 import com.example.demo.payload.request.LoginRequest;
 import com.example.demo.payload.request.SignupRequest;
@@ -38,9 +35,9 @@ public class AdminController {
 
 	  @Autowired
 	  AdminRepository adminRepository;
-	  
+
 	  @Autowired
-	  ComplaintRepository complaintRepository;
+	  private AdminService adminService;
 
 	  @Autowired
 	  PasswordEncoder encoder;
@@ -100,6 +97,31 @@ public class AdminController {
 	    return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, cookie.toString())
 	        .body(new MessageResponse("You've been signed out!"));
 	  }
+
+	@GetMapping("/{adminId}") // To get admin details
+	public ResponseEntity<?> getAdminById(@PathVariable Long adminId) {
+		Admin admin = adminRepository.findById(adminId).orElse(null);
+
+		if (admin != null) {
+
+			admin.setPassword(null); // Remove password from the response
+
+			return ResponseEntity.ok(admin);
+		} else {
+			return ResponseEntity.notFound().build();
+		}
+	}
+
+	@PutMapping("/update/{adminId}")
+	public ResponseEntity<?> updateAdminDetails(@PathVariable Long adminId, @RequestBody Admin updatedAdmin) {
+		Admin updated = adminService.updateAdminDetails(adminId, updatedAdmin);
+
+		if (updated != null) {
+			return ResponseEntity.ok(new MessageResponse("Admin details updated successfully!"));
+		} else {
+			return ResponseEntity.notFound().build(); // Admin not found
+		}
+	}
 
 
 }
