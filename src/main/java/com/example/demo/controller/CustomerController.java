@@ -28,9 +28,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import com.example.demo.Repository.ComplaintRepository;
 import com.example.demo.Repository.CustomerRepository;
+import com.example.demo.Repository.FAQRepository;
 import com.example.demo.Service.CustomerService;
 import com.example.demo.entity.Complaint;
 import com.example.demo.entity.Customer;
+import com.example.demo.entity.FAQ;
 import com.example.demo.payload.request.LoginRequest;
 import com.example.demo.payload.request.SignupRequest;
 import com.example.demo.response.MessageResponse;
@@ -61,6 +63,10 @@ public class CustomerController {
 
   @Autowired
   JwtUtils jwtUtils;
+  
+
+  @Autowired
+  private FAQRepository faqRepository;
 
   @PostMapping("/signin")
   public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
@@ -170,19 +176,42 @@ public class CustomerController {
           List<Complaint> customerComplaints = customer.getComplaints(); // Use the new getter method
 
           for (Complaint complaint : customerComplaints) {
-           //   if (complaint.getStatus().equals("Resolved")) {
+              if (complaint.getStatus().equals("Resolved")) {
                   complaint.setRating(rating);
                   complaintRepository.save(complaint);
-              //}
+              
           }
-
+          }
           return ResponseEntity.ok(new MessageResponse("Complaints rated successfully!"));
       } else {
           return ResponseEntity.notFound().build(); // Customer not found
       }
   }
+  
+  @GetMapping("/getFaq/{faqId}")
+  public ResponseEntity<?> getFaqById(@PathVariable Long faqId) {
+      FAQ faq = faqRepository.findById(faqId).orElse(null);
+
+      if(faq != null) {
+          return ResponseEntity.ok(faq);
+      } else {
+          return ResponseEntity.notFound().build();
+      }
+
+  }
+  
+  @GetMapping("/getAllFaqs/{faqType}")
+  public ResponseEntity<?> getAllFaqsByType(@PathVariable String faqType) {
+      List<FAQ> faqs = faqRepository.findAllByFaqType(faqType);
+
+      if (!faqs.isEmpty()) {
+          return ResponseEntity.ok(faqs);
+      } else {
+          return ResponseEntity.notFound().build();
+      }
 
 
+  }
 
   
   /*
