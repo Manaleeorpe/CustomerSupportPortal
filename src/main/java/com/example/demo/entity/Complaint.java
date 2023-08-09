@@ -107,4 +107,8 @@ public class Complaint {
     @ManyToOne
     @JoinColumn(name = "customerid", insertable = false, updatable = false)
     private Customer customer;
+    
+    @ManyToOne
+    @JoinColumn(name = "adminid", insertable = false, updatable = false)
+    private Admin admin;
 }

@@ -29,7 +29,9 @@ import org.springframework.web.bind.annotation.RestController;
 import com.example.demo.Repository.ComplaintRepository;
 import com.example.demo.Repository.CustomerRepository;
 import com.example.demo.Repository.FAQRepository;
+import com.example.demo.Service.ComplaintService;
 import com.example.demo.Service.CustomerService;
+import com.example.demo.entity.Admin;
 import com.example.demo.entity.Complaint;
 import com.example.demo.entity.Customer;
 import com.example.demo.entity.FAQ;
@@ -57,11 +59,19 @@ public class CustomerController {
   @Autowired
   PasswordEncoder encoder;
   
-  @Autowired
+  
   private CustomerService customerService;
-
+  
+  private ComplaintService complaintService;
 
   @Autowired
+  public CustomerController(CustomerService customerService, ComplaintService complaintService) {
+	super();
+	this.customerService = customerService;
+	this.complaintService = complaintService;
+}
+
+@Autowired
   JwtUtils jwtUtils;
   
 
@@ -135,8 +145,12 @@ public class CustomerController {
 
           // Save the new complaint entity to the database
           complaintRepository.save(newComplaint);
+          Admin addedAdmin = complaintService.AddComplaintToAdmin(newComplaint.getComplaintid());
+          if (addedAdmin == null) {
+              return ResponseEntity.badRequest().body(new MessageResponse("Failed to associate complaint with admin."));
+          }
 
-          return ResponseEntity.ok(new MessageResponse("Complaint added successfully!"));
+          return ResponseEntity.ok(addedAdmin);
       } else {
           return ResponseEntity.badRequest().body(new MessageResponse("Customer not found for the provided ID."));
       }
@@ -209,9 +223,9 @@ public class CustomerController {
       } else {
           return ResponseEntity.notFound().build();
       }
-
-
   }
+  
+  
 
   
   /*

@@ -97,7 +97,8 @@ public class AdminController {
 	      }
 
 	      // Create new customer's account
-	      Admin admin = new Admin(signUpRequest.getUsername(),
+	      Admin admin = new Admin(signUpRequest.getAdminid(),
+	    		  							signUpRequest.getUsername(),
 	                                        signUpRequest.getEmail(),
 	                                        signUpRequest.getPhone_number(),
 	                                        signUpRequest.getAdminType(),

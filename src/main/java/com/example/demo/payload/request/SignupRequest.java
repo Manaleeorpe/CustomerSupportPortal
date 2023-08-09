@@ -12,8 +12,17 @@ public class SignupRequest {
     @Size(min = 3, max = 20)
     private String username;
     private String AdminType;
+    private Long adminid;
  
    
+
+	public Long getAdminid() {
+		return adminid;
+	}
+
+	public void setAdminid(Long adminid) {
+		this.adminid = adminid;
+	}
 
 	public String getAdminType() {
 		return AdminType;

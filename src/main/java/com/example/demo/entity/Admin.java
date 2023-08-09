@@ -1,10 +1,13 @@
 package com.example.demo.entity;
 
+import java.util.List;
+
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
+import javax.persistence.FetchType;
 import javax.persistence.Id;
+import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotNull;
@@ -14,18 +17,19 @@ import javax.validation.constraints.Size;
 @Table(name = "admin")
 public class Admin {
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name = "adminid")
     private Long adminid;
 
     public Admin() {
         super();
     }
+    @OneToMany(mappedBy = "admin" , cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    private List<Complaint> complaints;
 
     public Admin(@NotNull(message = "First name is mandatory") String name,
 			@NotNull(message = "Email is mandatory") @Email(message = "Require email format") String email,
 			@Size(max = 10, min = 10, message = "Require only 10 digits") String Phone_number, String AdminType,
-			@NotNull(message = "Password is mandatory") String password) {
+			@NotNull(message = "Password is mandatory") String password, Long adminid) {
 		super();
 		this.adminid = adminid;
 		this.name = name;
@@ -75,7 +79,33 @@ public class Admin {
         this.Phone_number = Phone_number;
     }
 
-    @NotNull(message = "First name is mandatory")
+    public Admin(Long adminid, List<Complaint> complaints, @NotNull(message = "First name is mandatory") String name,
+			@NotNull(message = "Email is mandatory") @Email(message = "Require email format") String email,
+			@Size(max = 10, min = 10, message = "Require only 10 digits") String phone_number,
+			@NotNull(message = "Password is mandatory") String password, String adminType) {
+		super();
+		this.adminid = adminid;
+		this.complaints = complaints;
+		this.name = name;
+		this.email = email;
+		Phone_number = phone_number;
+		this.password = password;
+		AdminType = adminType;
+	}
+
+	public Admin(Long adminid, @NotNull(message = "First name is mandatory") String name,
+			@NotNull(message = "Email is mandatory") @Email(message = "Require email format") String email,
+			@Size(max = 10, min = 10, message = "Require only 10 digits") String phone_number,String adminType,
+			@NotNull(message = "Password is mandatory") String password) {
+		super();
+		this.adminid = adminid;
+		this.name = name;
+		this.email = email;
+		Phone_number = phone_number;
+		this.password = password;
+		AdminType = adminType;
+	}
+	@NotNull(message = "First name is mandatory")
     private String name;
 
     @NotNull(message = "Email is mandatory")
@@ -140,4 +170,13 @@ public class Admin {
     public void setAdminType(String AdminType) {
         this.AdminType = AdminType;
     }
+    
+    
+	public List<Complaint> getComplaint() {
+		return complaints;
+	}
+
+	public void setComplaint(List<Complaint> complaints) {
+		this.complaints = complaints;
+	}
 }
