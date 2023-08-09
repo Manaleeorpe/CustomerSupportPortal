@@ -188,18 +188,18 @@ public class CustomerController {
       }
   }
 
-    @GetMapping("/getFaq/{faqId}")
-    public ResponseEntity<?> getFaqById(@PathVariable Long faqId) {
-        FAQ faq = faqRepository.findById(faqId).orElse(null);
 
-        if(faq != null) {
-            return ResponseEntity.ok(faq);
+    @GetMapping("/getAllFaqs/{faqType}")
+    public ResponseEntity<?> getAllFaqsByType(@PathVariable String faqType) {
+        List<FAQ> faqs = faqRepository.findAllByFaqType(faqType);
+
+        if (!faqs.isEmpty()) {
+            return ResponseEntity.ok(faqs);
         } else {
             return ResponseEntity.notFound().build();
         }
-
     }
 
-  
+
 
 }
