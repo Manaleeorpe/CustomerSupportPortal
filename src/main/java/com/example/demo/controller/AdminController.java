@@ -1,7 +1,6 @@
 package com.example.demo.controller;
 
 import java.util.List;
-
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -11,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -23,13 +23,15 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import com.example.demo.entity.FAQ;
+
 import com.example.demo.Repository.AdminRepository;
 import com.example.demo.Repository.ComplaintRepository;
 import com.example.demo.Repository.FAQRepository;
 import com.example.demo.Service.AdminService;
+import com.example.demo.Service.ComplaintService;
 import com.example.demo.entity.Admin;
 import com.example.demo.entity.Complaint;
+import com.example.demo.entity.FAQ;
 import com.example.demo.payload.request.LoginRequest;
 import com.example.demo.payload.request.SignupRequest;
 import com.example.demo.response.MessageResponse;
@@ -60,8 +62,10 @@ public class AdminController {
 	  private FAQRepository faqRepository;
 	  
 	  @Autowired
-	  
 	  private AdminService adminService;
+
+	  @Autowired
+	  private ComplaintService complaintService;
 
 	  @PostMapping("/signin")
 	  public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
@@ -131,6 +135,7 @@ public class AdminController {
 	  }
 	  
 	  @PutMapping("/update/{adminId}")
+	  @PreAuthorize("hasRole('ADMIN')")
 		public ResponseEntity<?> updateAdminDetails(@PathVariable Long adminId, @RequestBody Admin updatedAdmin) {
 			Admin updated = adminService.updateAdminDetails(adminId, updatedAdmin);
 
@@ -142,19 +147,27 @@ public class AdminController {
 		}
 
 	  @PutMapping("/updateComplaint/{complaintid}")
+	  @PreAuthorize("hasRole('ADMIN')")
 		public ResponseEntity<MessageResponse> updateComplaint(@PathVariable Long complaintid, @RequestBody Complaint updatedComplaint) {
-			Complaint existingComplaint = adminService.updateComplaintDetails(complaintid, updatedComplaint);
-
+		  Complaint complaint = complaintRepository.findById(complaintid).orElse(null);
+		  String previousStatus = complaint.getStatus();
+		  
+			if (previousStatus.equals("Pending") && updatedComplaint.getStatus().equals("Resolved")) {
+				complaintService.unassignAdmin(complaintid);
+				complaintService.CalculateHours();
+	        }
+		  Complaint existingComplaint = adminService.updateComplaintDetails(complaintid, updatedComplaint);
 			if (existingComplaint != null) {
 				return ResponseEntity.ok(new MessageResponse("Complaint details updated successfully"));
 			} else {
 				return ResponseEntity.notFound().build(); //Complaint not found
 			}
-
+			
 
 		}
 
 		@PostMapping("/addFaq")
+		@PreAuthorize("hasRole('ADMIN')")
 		public ResponseEntity<?> addFaq(@RequestBody FAQ faq) {
 
 				// Create a new FAQ entity
@@ -171,6 +184,7 @@ public class AdminController {
 		}
 
 		@GetMapping("/getFaq/{faqId}")
+		@PreAuthorize("hasRole('ADMIN')")
 		public ResponseEntity<?> getFaqById(@PathVariable Long faqId) {
 			FAQ faq = faqRepository.findById(faqId).orElse(null);
 
@@ -183,6 +197,7 @@ public class AdminController {
 		}
 
 		@PutMapping("/updateFaq/{faqId}")
+		@PreAuthorize("hasRole('ADMIN')")
 		public ResponseEntity<MessageResponse> updateFaq(@PathVariable Long faqId, @RequestBody FAQ updatedFAQ) {
 			FAQ existingFAQ = adminService.updateFaqDetails(faqId, updatedFAQ);
 

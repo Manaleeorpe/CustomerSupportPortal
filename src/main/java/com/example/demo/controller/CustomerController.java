@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -132,6 +133,7 @@ public class CustomerController {
   
  
   @PostMapping("/{customerId}/add-complaint")
+  @PreAuthorize("hasRole('CUSTOMER')")
   public ResponseEntity<?> addComplaint(@PathVariable Long customerId, @Valid @RequestBody Complaint complaint) {
       Customer customer = customerRepository.findById(customerId).orElse(null);
 
@@ -150,7 +152,7 @@ public class CustomerController {
           // Save the new complaint entity to the database
           complaintRepository.save(newComplaint);
           Admin addedAdmin = complaintService.AddComplaintToAdmin(newComplaint.getComplaintid());
-          complaintService.addHours();
+          complaintService.CalculateHours();
           if (addedAdmin == null) {
               return ResponseEntity.badRequest().body(new MessageResponse("Failed to associate complaint with admin."));
           }
@@ -180,6 +182,7 @@ public class CustomerController {
   
   
   @PutMapping("UpdateCustomer/{customerId}")
+  @PreAuthorize("hasRole('CUSTOMER')")
   public ResponseEntity<?> updateCustomerDetails(@PathVariable Long customerId, @RequestBody Customer updatedCustomer) {
       Customer updated = customerService.updateCustomerDetails(customerId, updatedCustomer);
 
@@ -191,6 +194,7 @@ public class CustomerController {
   }
 
   @PutMapping("/{customerId}/rate")
+  @PreAuthorize("hasRole('CUSTOMER')")
   public ResponseEntity<?> rateComplaint(@PathVariable Long customerId, @RequestBody Double rating) {
       Customer customer = customerRepository.findById(customerId).orElse(null);
 
@@ -211,6 +215,7 @@ public class CustomerController {
   }
   
   @GetMapping("/getFaq/{faqId}")
+  @PreAuthorize("hasRole('CUSTOMER')")
   public ResponseEntity<?> getFaqById(@PathVariable Long faqId) {
       FAQ faq = faqRepository.findById(faqId).orElse(null);
 
@@ -223,6 +228,7 @@ public class CustomerController {
   }
   
   @GetMapping("/getAllFaqs/{faqType}")
+  
   public ResponseEntity<?> getAllFaqsByType(@PathVariable String faqType) {
       List<FAQ> faqs = faqRepository.findAllByFaqType(faqType);
 
