@@ -1,8 +1,6 @@
 package com.example.demo.controller;
 
 import java.util.Date;
-
-
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -10,14 +8,12 @@ import javax.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -26,9 +22,11 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
 import com.example.demo.Repository.ComplaintRepository;
 import com.example.demo.Repository.CustomerRepository;
 import com.example.demo.Repository.FAQRepository;
+import com.example.demo.Service.ChatbotService;
 import com.example.demo.Service.ComplaintService;
 import com.example.demo.Service.CustomerService;
 import com.example.demo.entity.Admin;
@@ -37,6 +35,7 @@ import com.example.demo.entity.Customer;
 import com.example.demo.entity.FAQ;
 import com.example.demo.payload.request.LoginRequest;
 import com.example.demo.payload.request.SignupRequest;
+import com.example.demo.response.ComplaintResponse;
 import com.example.demo.response.MessageResponse;
 import com.example.demo.response.UserInfoResponse;
 import com.example.demo.security.jwt.JwtUtils;
@@ -63,12 +62,14 @@ public class CustomerController {
   private CustomerService customerService;
   
   private ComplaintService complaintService;
+  private ChatbotService chatbotService;
 
   @Autowired
-  public CustomerController(CustomerService customerService, ComplaintService complaintService) {
+  public CustomerController(CustomerService customerService, ComplaintService complaintService, ChatbotService chatbotService) {
 	super();
 	this.customerService = customerService;
 	this.complaintService = complaintService;
+	this.chatbotService = chatbotService;
 }
 
 @Autowired
@@ -135,9 +136,12 @@ public class CustomerController {
       Customer customer = customerRepository.findById(customerId).orElse(null);
 
       if (customer != null) {
+          // Determine severity level and generate response using chatbot service
+          String severityLevel = chatbotService.determineSeverity(complaint.getDescription());
+          String response = chatbotService.processComplaint(complaint.getDescription());
           // Create a new Complaint entity based on the request
           Complaint newComplaint = new Complaint();
-          newComplaint.setComplaintType(complaint.getComplaintType());
+          newComplaint.setComplaintType(severityLevel); // Set the severity level as complaintType
           newComplaint.setCustomerid(customerId);
           newComplaint.setDate(new Date());
           newComplaint.setStatus("Pending");
@@ -145,14 +149,16 @@ public class CustomerController {
 
           // Save the new complaint entity to the database
           complaintRepository.save(newComplaint);
-          
           Admin addedAdmin = complaintService.AddComplaintToAdmin(newComplaint.getComplaintid());
           complaintService.addHours();
           if (addedAdmin == null) {
               return ResponseEntity.badRequest().body(new MessageResponse("Failed to associate complaint with admin."));
           }
+          
+          ComplaintResponse complaintResponse = new ComplaintResponse(response, addedAdmin.getName());
 
-          return ResponseEntity.ok(addedAdmin);
+          return ResponseEntity.ok(complaintResponse);
+
       } else {
           return ResponseEntity.badRequest().body(new MessageResponse("Customer not found for the provided ID."));
       }
