@@ -145,7 +145,9 @@ public class CustomerController {
 
           // Save the new complaint entity to the database
           complaintRepository.save(newComplaint);
+          
           Admin addedAdmin = complaintService.AddComplaintToAdmin(newComplaint.getComplaintid());
+          complaintService.addHours();
           if (addedAdmin == null) {
               return ResponseEntity.badRequest().body(new MessageResponse("Failed to associate complaint with admin."));
           }

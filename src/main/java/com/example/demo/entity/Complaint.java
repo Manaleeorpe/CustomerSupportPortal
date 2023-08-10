@@ -33,11 +33,38 @@ public class Complaint {
     private String description; // New field for complaint description
     
     private Double rating; // New field for complaint rating
+    
+    private Long adminid;
 
-    public Complaint() {
+    public Long getAdminid() {
+		return adminid;
+	}
+
+	public void setAdminid(Long adminid) {
+		this.adminid = adminid;
+	}
+
+	public Complaint() {
     }
 
-    public Complaint(Long complaintid, String complaintType, Long customerid, Date date, String status, String description, Double rating) {
+    public Complaint(Long complaintid, @NotNull(message = "Complaint type is mandatory") String complaintType,
+			@NotNull(message = "Customer ID is mandatory") Long customerid,
+			@NotNull(message = "Date is mandatory") Date date, @NotNull(message = "Status is mandatory") String status,
+			String description, Double rating, Long adminid, Customer customer, Admin admin) {
+		super();
+		this.complaintid = complaintid;
+		this.complaintType = complaintType;
+		this.customerid = customerid;
+		this.date = date;
+		this.status = status;
+		this.description = description;
+		this.rating = rating;
+		this.adminid = adminid;
+		this.customer = customer;
+		this.admin = admin;
+	}
+
+	public Complaint(Long complaintid, String complaintType, Long customerid, Date date, String status, String description, Double rating) {
         this.complaintid = complaintid;
         this.complaintType = complaintType;
         this.customerid = customerid;
@@ -111,4 +138,12 @@ public class Complaint {
     @ManyToOne
     @JoinColumn(name = "adminid", insertable = false, updatable = false)
     private Admin admin;
+    
+    public void setAdmin(Admin admin) {
+        this.admin = admin;
+        this.adminid = admin != null ? admin.getAdminid() : null;
+    }
+
+
+
 }

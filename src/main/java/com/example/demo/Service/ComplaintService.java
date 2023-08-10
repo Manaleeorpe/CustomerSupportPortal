@@ -24,6 +24,59 @@ public class ComplaintService {
         this.complaintRepository = complaintRepository;
         this.adminRepository = adminRepository;
     }
+    
+    public void addHours() {     
+         for (Long i = 1L; i <= 5L; i++) {
+             Optional<Admin> adminOptional = adminRepository.findById(i);
+             
+             if (adminOptional.isPresent()) {
+                 Admin admin = adminOptional.get();
+                 List<Complaint> adminComplaints = admin.getComplaints(); // Ensure you use getComplaints() correctly
+                 int hours = 0; // Reset hours for each admin
+                 for (Complaint complaint : adminComplaints) {
+                     String complaintType = complaint.getComplaintType();
+                     if (complaintType.equals("Level 1")) {
+                         hours += 2;
+                     } else if (complaintType.equals("Level 2")) {
+                         hours += 24;
+                     } else if (complaintType.equals("Level 3")) {
+                         hours += 48;
+                     }
+                 }
+                 
+                 // Update admin's total complaint hours after calculating
+                 admin.setComplaintHours(hours);
+                 adminRepository.save(admin); // Save the updated admin
+             }
+         }
+ 
+    }
+    
+    public Long ChooseAdmin() {
+        int minHours = Integer.MAX_VALUE; 
+        Long chosenAdminId = null; 
+        Random random = new Random();
+        
+        for (Long i = 1L; i <= 5L; i++) {
+            Optional<Admin> adminOptional = adminRepository.findById(i);
+            
+            if (adminOptional.isPresent()) {
+                Admin admin = adminOptional.get();
+                int AdminHours = admin.getComplaintHours();
+
+                if (AdminHours < minHours) {
+                    minHours = AdminHours;
+                    chosenAdminId = i;
+                } else if (AdminHours == minHours && random.nextBoolean()) {
+                    chosenAdminId = i;
+                }
+
+                adminRepository.save(admin); // Save the updated admin
+            }
+        }
+        
+        return chosenAdminId;
+    }
 
     public Admin AddComplaintToAdmin(Long complaintid) {
         Optional<Complaint> complaintOptional = complaintRepository.findById(complaintid);
@@ -31,17 +84,16 @@ public class ComplaintService {
         if (complaintOptional.isPresent()) {
             Complaint complaint = complaintOptional.get();
             
-            Random random = new Random();
-            Long randomNumber = (long) (random.nextInt(5) + 1);
+            Long randomNumber = ChooseAdmin();
             System.out.println(randomNumber);
             
             Optional<Admin> adminOptional = adminRepository.findById(randomNumber);
             
             if (adminOptional.isPresent()) {
                 Admin admin = adminOptional.get();
-                List<Complaint> adminComplaints = admin.getComplaint();
+                List<Complaint> adminComplaints = admin.getComplaints();
                 adminComplaints.add(complaint);
-                admin.setComplaint(adminComplaints);
+                admin.setComplaints(adminComplaints);
 
                 return adminRepository.save(admin);
             } else {

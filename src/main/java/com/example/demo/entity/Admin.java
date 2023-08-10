@@ -23,8 +23,34 @@ public class Admin {
     public Admin() {
         super();
     }
-    @OneToMany(mappedBy = "admin" , cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-    private List<Complaint> complaints;
+    @OneToMany(mappedBy = "admin" , cascade = CascadeType.ALL)
+    private List<Complaint> Complaint;
+
+    public Admin(Long adminid, List<com.example.demo.entity.Complaint> complaint,
+			@NotNull(message = "First name is mandatory") String name,
+			@NotNull(message = "Email is mandatory") @Email(message = "Require email format") String email,
+			@Size(max = 10, min = 10, message = "Require only 10 digits") String phone_number,
+			@NotNull(message = "Password is mandatory") String password, String adminType) {
+		super();
+		this.adminid = adminid;
+		Complaint = complaint;
+		this.name = name;
+		this.email = email;
+		Phone_number = phone_number;
+		this.password = password;
+		AdminType = adminType;
+	}
+
+	public List<Complaint> getComplaints() {
+        return Complaint;
+    }
+	public void setComplaints(List<Complaint> complaints) {
+	    Complaint = complaints;
+	    for (Complaint complaint : complaints) {
+	        complaint.setAdmin(this); // Set the admin for each complaint
+	    }
+	}
+
 
     public Admin(@NotNull(message = "First name is mandatory") String name,
 			@NotNull(message = "Email is mandatory") @Email(message = "Require email format") String email,
@@ -78,20 +104,6 @@ public class Admin {
         this.email = email;
         this.Phone_number = Phone_number;
     }
-
-    public Admin(Long adminid, List<Complaint> complaints, @NotNull(message = "First name is mandatory") String name,
-			@NotNull(message = "Email is mandatory") @Email(message = "Require email format") String email,
-			@Size(max = 10, min = 10, message = "Require only 10 digits") String phone_number,
-			@NotNull(message = "Password is mandatory") String password, String adminType) {
-		super();
-		this.adminid = adminid;
-		this.complaints = complaints;
-		this.name = name;
-		this.email = email;
-		Phone_number = phone_number;
-		this.password = password;
-		AdminType = adminType;
-	}
 
 	public Admin(Long adminid, @NotNull(message = "First name is mandatory") String name,
 			@NotNull(message = "Email is mandatory") @Email(message = "Require email format") String email,
@@ -171,12 +183,16 @@ public class Admin {
         this.AdminType = AdminType;
     }
     
-    
-	public List<Complaint> getComplaint() {
-		return complaints;
+    @Column(name = "complaint_hours")
+    public int complaintHours;
+
+	public int getComplaintHours() {
+		return complaintHours;
 	}
 
-	public void setComplaint(List<Complaint> complaints) {
-		this.complaints = complaints;
+	public void setComplaintHours(int complaintHours) {
+		this.complaintHours = complaintHours;
 	}
+
+    
 }
