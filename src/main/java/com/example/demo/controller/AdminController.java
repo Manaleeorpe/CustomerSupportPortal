@@ -1,6 +1,7 @@
 package com.example.demo.controller;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -9,6 +10,7 @@ import javax.validation.Valid;
 
 import com.example.demo.Repository.CustomerRepository;
 import com.example.demo.Service.EmailService;
+import com.example.demo.Service.TokenService;
 import com.example.demo.entity.Customer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
@@ -26,6 +28,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.demo.Repository.AdminRepository;
@@ -37,6 +40,7 @@ import com.example.demo.entity.Admin;
 import com.example.demo.entity.Complaint;
 import com.example.demo.entity.FAQ;
 import com.example.demo.payload.request.LoginRequest;
+import com.example.demo.payload.request.ResetPasswordRequest;
 import com.example.demo.payload.request.SignupRequest;
 import com.example.demo.response.MessageResponse;
 import com.example.demo.response.UserInfoResponse;
@@ -76,6 +80,10 @@ public class AdminController {
 
 	  @Autowired
 	  private EmailService emailService;
+	  
+	  @Autowired
+	  private TokenService tokenService;
+	  
 
 	  @PostMapping("/signin")
 	  public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
@@ -102,11 +110,11 @@ public class AdminController {
 
 	  @PostMapping("/signup")
 	  public ResponseEntity<?> registerUser(@Valid @RequestBody SignupRequest signUpRequest) {
-	      if (adminRepository.existsByName(signUpRequest.getUsername())) {
+		  if (customerRepository.existsByName(signUpRequest.getUsername()) || adminRepository.existsByName(signUpRequest.getUsername())) {
 	          return ResponseEntity.badRequest().body(new MessageResponse("Error: Username is already taken!"));
 	      }
 
-	      if (adminRepository.existsByEmail(signUpRequest.getEmail())) {
+	      if (customerRepository.existsByEmail(signUpRequest.getEmail()) || adminRepository.existsByEmail(signUpRequest.getEmail())) {
 	          return ResponseEntity.badRequest().body(new MessageResponse("Error: Email is already in use!"));
 	      }
 
@@ -130,6 +138,67 @@ public class AdminController {
 	    return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, cookie.toString())
 	        .body(new MessageResponse("You've been signed out!"));
 	  }
+	  
+	  
+	  @PostMapping("/forgot-password")
+	  public ResponseEntity<?> adminForgotPassword(@RequestParam String email) {
+	      Admin admin = adminRepository.findByEmail(email);
+
+	      if (admin == null) {
+	          return ResponseEntity.badRequest().body(new MessageResponse("No admin found with the provided email."));
+	      }
+
+	      // Generate a password reset token and construct the reset link
+	      String token = tokenService.generatePasswordResetToken(admin.getAdminid());
+	      String resetLink = "http://localhost:8080/auth/admin/reset-password?token=" + token;
+
+	      // Compose the email content
+	      String subject = "Admin Password Reset Request";
+	      String text = "To reset your password, please click the link below:\n" + resetLink;
+
+	      // Send the password reset email
+	      if (emailService.sendPasswordResetVerificationEmail(email, "your-email@example.com", subject, text)) {
+	          return ResponseEntity.ok(new MessageResponse("Password reset instructions sent to your email."));
+	      } else {
+	          return ResponseEntity.badRequest().body(new MessageResponse("Failed to send password reset email."));
+	      }
+	  }
+
+	  @GetMapping("/reset-password")
+	  public ResponseEntity<?> adminResetPasswordPage(@RequestParam String token) {
+	      Long adminId = tokenService.getUserIdFromToken(token);
+
+	      if (adminId != null) {
+	          // Return a JSON response containing the verified adminId
+	    	  return ResponseEntity.ok().body("Token verified.");
+	      } else {
+	          return ResponseEntity.badRequest().body(new MessageResponse("Invalid token or token expired."));
+	      }
+	  }
+
+	  @PostMapping("/reset-password")
+	  public ResponseEntity<?> adminResetPassword(@Valid @RequestBody ResetPasswordRequest resetPasswordRequest) {
+	      // Validate token and retrieve admin ID
+	      Long adminId = tokenService.getUserIdFromToken(resetPasswordRequest.getToken());
+
+	      if (adminId != null) {
+	          // Fetch the admin by ID
+	          Admin admin = adminRepository.findById(adminId).orElse(null);
+
+	          if (admin != null) {
+	              // Update the admin's password
+	              admin.setPassword(encoder.encode(resetPasswordRequest.getPassword()));
+	              adminRepository.save(admin);
+
+	              return ResponseEntity.ok(new MessageResponse("Password reset successfully."));
+	          } else {
+	              return ResponseEntity.badRequest().body(new MessageResponse("Admin not found."));
+	          }
+	      } else {
+	          return ResponseEntity.badRequest().body(new MessageResponse("Invalid token or token expired."));
+	      }
+	  }
+
 	  
 	  @GetMapping("/{adminId}") //admin details
 	  public ResponseEntity<?> getAdminDetails(@PathVariable Long adminId) {
@@ -176,73 +245,78 @@ public class AdminController {
 
 		} */
 
-	@PutMapping("/updateComplaint/{complaintid}")
-	@PreAuthorize("hasRole('ADMIN')")
-	public ResponseEntity<MessageResponse> updateComplaint(@PathVariable Long complaintid, @RequestBody Complaint updatedComplaint) {
-		Complaint complaint = complaintRepository.findById(complaintid).orElse(null);
-		String previousStatus = complaint.getStatus();
+	  @PutMapping("/updateComplaint/{complaintid}")
+		@PreAuthorize("hasRole('ADMIN')")
+		public ResponseEntity<MessageResponse> updateComplaint(@PathVariable Long complaintid, @RequestBody Complaint updatedComplaint) {
+			Complaint complaint = complaintRepository.findById(complaintid).orElse(null);
+			String previousStatus = complaint.getStatus();
 
-		if (previousStatus.equals("Pending") && updatedComplaint.getStatus().equals("Resolved")) {
-			complaintService.unassignAdmin(complaintid);
-			complaintService.CalculateHours();
-		}
-
-		Complaint existingComplaint = adminService.updateComplaintDetails(complaintid, updatedComplaint);
-
-		if (existingComplaint != null) {
-			// Get the customer associated with the complaint
-			Long customerId = existingComplaint.getCustomerid();
-			Customer customer = customerRepository.findById(customerId).orElse(null);
-
-			// Prepare email content based on the updated complaint status
-			String to = customer.getEmail();
-			String from = "customerportal45@gmail.com";
-			String subject = "Your Complaint Has Been Resolved (ID: " + complaintid + ")";
-			String text = "Dear Customer,\n" +
-						"\n" +
-						"We are pleased to inform you that your complaint with Complaint ID: " + complaintid + " has been resolved.\n" +
-						"\n" +
-						"Our team has successfully addressed your concerns. We hope the resolution meets your satisfaction.\n" +
-						"\n" +
-						"Thank you for your patience and understanding throughout this process.\n" +
-						"\n" +
-						"If you have any further questions or feedback, please do not hesitate to reach out to us.\n" +
-						"\n" +
-						"Best regards,\n" +
-						"Customer Support Team";
-            File file = new File("C:\\Users\\ADMIN\\Downloads\\Issue Resolved Pdf.pdf");
-
-			// Send email to the customer
-			boolean emailSent = emailService.sendEmailWithAttachment(to, from, subject, text, file);
-
-			if (emailSent) {
-				System.out.println("Email sent successfully");
-			} else {
-				System.out.println("There was an error sending the email");
+			if (previousStatus.equals("Pending") && updatedComplaint.getStatus().equals("Resolved")) {
+				complaintService.unassignAdmin(complaintid);
+				complaintService.CalculateHours();
 			}
 
-			return ResponseEntity.ok(new MessageResponse("Complaint details updated successfully"));
-		} else {
-			return ResponseEntity.notFound().build(); // Complaint not found
+			Complaint existingComplaint = adminService.updateComplaintDetails(complaintid, updatedComplaint);
+
+			if (existingComplaint != null) {
+				// Get the customer associated with the complaint
+				Long customerId = existingComplaint.getCustomerid();
+				Customer customer = customerRepository.findById(customerId).orElse(null);
+
+				// Prepare email content based on the updated complaint status
+				String to = customer.getEmail();
+				String from = "customerportal45@gmail.com";
+				String subject = "Your Complaint Has Been Resolved (ID: " + complaintid + ")";
+				String text = "Dear " + customer.getName() + ",\n" +
+							"\n" +
+							"We are pleased to inform you that your complaint with Complaint ID: " + complaintid + " has been resolved.\n" +
+							"\n" +
+							"Our team led by has successfully addressed your concerns. We hope the resolution meets your satisfaction.\n" +
+							"\n" +
+							"Thank you for your patience and understanding throughout this process.\n" +
+							"\n" +
+							"If you have any further questions or feedback, please do not hesitate to reach out to us.\n" +
+							"\n" +
+							"Best regards,\n" +
+							"Customer Support Team";
+	            File file = new File("C:\\Users\\ADMIN\\Downloads\\Issue Resolved Pdf.pdf");
+
+				// Send email to the customer
+				boolean emailSent = emailService.sendEmailWithAttachment(to, from, subject, text, file);
+
+				if (emailSent) {
+					System.out.println("Email sent successfully");
+				} else {
+					System.out.println("There was an error sending the email");
+				}
+
+				return ResponseEntity.ok(new MessageResponse("Complaint details updated successfully"));
+			} else {
+				return ResponseEntity.notFound().build(); // Complaint not found
+			}
 		}
+
+	@PostMapping("/addFaqs")
+	@PreAuthorize("hasRole('ADMIN')")
+	public ResponseEntity<?> addFaqs(@RequestBody List<FAQ> faqs) {
+
+	    List<FAQ> addedFaqs = new ArrayList<>();
+
+	    for (FAQ faq : faqs) {
+	        // Create a new FAQ entity
+	        FAQ newFaq = new FAQ();
+	        newFaq.setFaqType(faq.getFaqType());
+	        newFaq.setQuestion(faq.getQuestion());
+	        newFaq.setAnswer(faq.getAnswer());
+
+	        // Save the new FAQ entity to the database
+	        faqRepository.save(newFaq);
+	        addedFaqs.add(newFaq);
+	    }
+
+	    return ResponseEntity.ok(new MessageResponse("FAQs added successfully!"));
+
 	}
-
-	@PostMapping("/addFaq")
-		@PreAuthorize("hasRole('ADMIN')")
-		public ResponseEntity<?> addFaq(@RequestBody FAQ faq) {
-
-				// Create a new FAQ entity
-				FAQ newFaq = new FAQ();
-				newFaq.setFaqType(faq.getFaqType());
-				newFaq.setQuestion(faq.getQuestion());
-				newFaq.setAnswer(faq.getAnswer());
-
-				// Save the new FAQ entity to the database
-				faqRepository.save(newFaq);
-
-				return ResponseEntity.ok(new MessageResponse("FAQ added successfully!"));
-
-		}
 
 		@GetMapping("/getFaq/{faqId}")
 		@PreAuthorize("hasRole('ADMIN')")

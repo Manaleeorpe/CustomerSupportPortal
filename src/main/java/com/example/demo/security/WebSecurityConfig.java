@@ -3,6 +3,7 @@ package com.example.demo.security;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -56,8 +57,9 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
       .exceptionHandling().authenticationEntryPoint(unauthorizedHandler).and()
       .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).and()
       .authorizeRequests()
-      .antMatchers("/auth/customer/signin", "/auth/customer/signup","/auth/customer/signout").permitAll()
+      .antMatchers("/auth/customer/signin", "/auth/customer/signup","/auth/customer/signout","/auth/customer/forgot-password").permitAll()
       .antMatchers("/auth/admin/signin", "/auth/admin/signup").permitAll()
+      .antMatchers(HttpMethod.POST, "/auth/customer/*/add-complaint").permitAll()
       .antMatchers("/api/test/**").permitAll()
       .antMatchers("/auth/customer/**").authenticated()
       .antMatchers("/auth/admin/**").authenticated()
