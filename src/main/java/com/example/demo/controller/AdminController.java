@@ -1,11 +1,15 @@
 package com.example.demo.controller;
 
+import java.io.File;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 import javax.validation.Valid;
 
+import com.example.demo.Repository.CustomerRepository;
+import com.example.demo.Service.EmailService;
+import com.example.demo.entity.Customer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
@@ -60,12 +64,18 @@ public class AdminController {
 	  
 	  @Autowired
 	  private FAQRepository faqRepository;
+
+	  @Autowired
+	  private CustomerRepository customerRepository;
 	  
 	  @Autowired
 	  private AdminService adminService;
 
 	  @Autowired
 	  private ComplaintService complaintService;
+
+	  @Autowired
+	  private EmailService emailService;
 
 	  @PostMapping("/signin")
 	  public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
@@ -146,7 +156,7 @@ public class AdminController {
 			}
 		}
 
-	  @PutMapping("/updateComplaint/{complaintid}")
+	 /* @PutMapping("/updateComplaint/{complaintid}")
 	  @PreAuthorize("hasRole('ADMIN')")
 		public ResponseEntity<MessageResponse> updateComplaint(@PathVariable Long complaintid, @RequestBody Complaint updatedComplaint) {
 		  Complaint complaint = complaintRepository.findById(complaintid).orElse(null);
@@ -164,9 +174,60 @@ public class AdminController {
 			}
 			
 
+		} */
+
+	@PutMapping("/updateComplaint/{complaintid}")
+	@PreAuthorize("hasRole('ADMIN')")
+	public ResponseEntity<MessageResponse> updateComplaint(@PathVariable Long complaintid, @RequestBody Complaint updatedComplaint) {
+		Complaint complaint = complaintRepository.findById(complaintid).orElse(null);
+		String previousStatus = complaint.getStatus();
+
+		if (previousStatus.equals("Pending") && updatedComplaint.getStatus().equals("Resolved")) {
+			complaintService.unassignAdmin(complaintid);
+			complaintService.CalculateHours();
 		}
 
-		@PostMapping("/addFaq")
+		Complaint existingComplaint = adminService.updateComplaintDetails(complaintid, updatedComplaint);
+
+		if (existingComplaint != null) {
+			// Get the customer associated with the complaint
+			Long customerId = existingComplaint.getCustomerid();
+			Customer customer = customerRepository.findById(customerId).orElse(null);
+
+			// Prepare email content based on the updated complaint status
+			String to = customer.getEmail();
+			String from = "customerportal45@gmail.com";
+			String subject = "Your Complaint Has Been Resolved (ID: " + complaintid + ")";
+			String text = "Dear Customer,\n" +
+						"\n" +
+						"We are pleased to inform you that your complaint with Complaint ID: " + complaintid + " has been resolved.\n" +
+						"\n" +
+						"Our team has successfully addressed your concerns. We hope the resolution meets your satisfaction.\n" +
+						"\n" +
+						"Thank you for your patience and understanding throughout this process.\n" +
+						"\n" +
+						"If you have any further questions or feedback, please do not hesitate to reach out to us.\n" +
+						"\n" +
+						"Best regards,\n" +
+						"Customer Support Team";
+            File file = new File("C:\\Users\\ADMIN\\Downloads\\Issue Resolved Pdf.pdf");
+
+			// Send email to the customer
+			boolean emailSent = emailService.sendEmailWithAttachment(to, from, subject, text, file);
+
+			if (emailSent) {
+				System.out.println("Email sent successfully");
+			} else {
+				System.out.println("There was an error sending the email");
+			}
+
+			return ResponseEntity.ok(new MessageResponse("Complaint details updated successfully"));
+		} else {
+			return ResponseEntity.notFound().build(); // Complaint not found
+		}
+	}
+
+	@PostMapping("/addFaq")
 		@PreAuthorize("hasRole('ADMIN')")
 		public ResponseEntity<?> addFaq(@RequestBody FAQ faq) {
 
