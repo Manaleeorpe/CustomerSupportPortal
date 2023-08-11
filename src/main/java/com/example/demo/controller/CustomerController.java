@@ -8,9 +8,9 @@ import java.util.stream.Collectors;
 
 import javax.validation.Valid;
 
-import com.example.demo.Service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -25,11 +25,19 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.demo.Repository.AdminRepository;
 import com.example.demo.Repository.ComplaintRepository;
 import com.example.demo.Repository.CustomerRepository;
 import com.example.demo.Repository.FAQRepository;
+import com.example.demo.Service.AdminService;
+import com.example.demo.Service.ChatbotFAQsService;
+import com.example.demo.Service.ChatbotService;
+import com.example.demo.Service.ComplaintService;
+import com.example.demo.Service.CustomerService;
+import com.example.demo.Service.EmailService;
 import com.example.demo.entity.Admin;
 import com.example.demo.entity.Complaint;
 import com.example.demo.entity.Customer;
@@ -55,6 +63,9 @@ public class CustomerController {
   
   @Autowired
   ComplaintRepository complaintRepository;
+  
+  @Autowired
+  AdminRepository adminRepository;
 
   @Autowired
   PasswordEncoder encoder;
@@ -116,11 +127,11 @@ public class CustomerController {
 
   @PostMapping("/signup")
   public ResponseEntity<?> registerUser(@Valid @RequestBody SignupRequest signUpRequest) {
-      if (customerRepository.existsByName(signUpRequest.getUsername())) {
+      if (customerRepository.existsByName(signUpRequest.getUsername()) || adminRepository.existsByName(signUpRequest.getUsername())) {
           return ResponseEntity.badRequest().body(new MessageResponse("Error: Username is already taken!"));
       }
 
-      if (customerRepository.existsByEmail(signUpRequest.getEmail())) {
+      if (customerRepository.existsByEmail(signUpRequest.getEmail()) || adminRepository.existsByEmail(signUpRequest.getEmail())) {
           return ResponseEntity.badRequest().body(new MessageResponse("Error: Email is already in use!"));
       }
 
@@ -145,66 +156,66 @@ public class CustomerController {
   @PostMapping("/{customerid}/add-complaint")
   @PreAuthorize("hasRole('CUSTOMER')")
   public ResponseEntity<?> addComplaint(@PathVariable Long customerid, @Valid @RequestBody Complaint complaint) {
-        Customer customer = customerRepository.findById(customerid).orElse(null);
+      Customer customer = customerRepository.findById(customerid).orElse(null);
 
-        if (customer != null) {
-            // Determine severity level and generate response using chatbot service
-            String severityLevel = chatbotService.determineSeverity(complaint.getDescription());
-            String response = chatbotService.processComplaint(complaint.getDescription());
+      if (customer != null) {
+          // Determine severity level and generate response using chatbot service
+          String severityLevel = chatbotService.determineSeverity(complaint.getDescription());
+          String response = chatbotService.processComplaint(complaint.getDescription());
 
-            //get FAQ from chatbotFAQs service
-            String FAQType = chatbotFAQsService.determineType(complaint.getDescription());
-            List<FAQ> faqs = faqRepository.findAllByFaqType(FAQType);
+          //get FAQ from chatbotFAQs service
+          String FAQType = chatbotFAQsService.determineType(complaint.getDescription());
+          List<FAQ> faqs = faqRepository.findAllByFaqType(FAQType);
 
-            // Create a new Complaint entity based on the request
-            Complaint newComplaint = new Complaint();
-            newComplaint.setComplaintType(severityLevel); // Set the severity level as complaintType
-            newComplaint.setCustomerid(customerid);
-            newComplaint.setDate(new Date());
-            newComplaint.setStatus("Pending");
-            newComplaint.setDescription(complaint.getDescription());
+          // Create a new Complaint entity based on the request
+          Complaint newComplaint = new Complaint();
+          newComplaint.setComplaintType(severityLevel); // Set the severity level as complaintType
+          newComplaint.setCustomerid(customerid);
+          newComplaint.setDate(new Date());
+          newComplaint.setStatus("Pending");
+          newComplaint.setDescription(complaint.getDescription());
 
-            // Save the new complaint entity to the database
-            complaintRepository.save(newComplaint);
-            Admin addedAdmin = complaintService.AddComplaintToAdmin(newComplaint.getComplaintid());
-            complaintService.CalculateHours();
-            if (addedAdmin == null) {
-                return ResponseEntity.badRequest().body(new MessageResponse("Failed to associate complaint with admin."));
-            }
+          // Save the new complaint entity to the database
+          complaintRepository.save(newComplaint);
+          Admin addedAdmin = complaintService.AddComplaintToAdmin(newComplaint.getComplaintid());
+          complaintService.CalculateHours();
+          if (addedAdmin == null) {
+              return ResponseEntity.badRequest().body(new MessageResponse("Failed to associate complaint with admin."));
+          }
 
-            // Send email to the customer
-            String to = customer.getEmail();
-            String from = "customerportal45@gmail.com";
-            String subject = "Acknowledgement of Your Recent Complaint";
-            String text = "Dear Customer,\n" +
-                    "\n" +
-                    "We hope this email finds you well. We wanted to take a moment to acknowledge the complaint you recently submitted on our website with Complaint ID : " + newComplaint.getComplaintid() + ". Your feedback is important to us, and we're committed to addressing your concerns as swiftly as possible.\n" +
-                    "\n" +
-                    "We are reaching out to let you know that your complaint is currently under review by our dedicated team . We understand the importance of timely resolution, and please be assured that we are actively working on a solution.\n" +
-                    "\n" +
-                    "We take your concerns seriously and are committed to addressing them promptly. Our customer support team has been informed about your complaint and is already working on finding a solution. We will strive to resolve this matter to your satisfaction and ensure that such issues do not recur in the future.\n" +
-                    "\n" +
-                    "Thank you for bringing this matter to our attention. We look forward to resolving it to your satisfaction.";
+          // Send email to the customer
+          String to = customer.getEmail();
+          String from = "customerportal45@gmail.com";
+          String subject = "Acknowledgement of Your Recent Complaint";
+          String text = "Dear " + customer.getName() + ",\n" +
+                  "\n" +
+                  "We hope this email finds you well. We wanted to take a moment to acknowledge the complaint you recently submitted on our website with Complaint ID : " + newComplaint.getComplaintid() + ". Your feedback is important to us, and we're committed to addressing your concerns as swiftly as possible.\n" +
+                  "\n" +
+                  "We are reaching out to let you know that your complaint is currently under review by our dedicated team led by " + addedAdmin.getName() + ". We understand the importance of timely resolution, and please be assured that we are actively working on a solution.\n" +
+                  "\n" +
+                  "We take your concerns seriously and are committed to addressing them promptly. Our customer support team, led by " + addedAdmin.getName() + ", has been informed about your complaint and is already working on finding a solution. We will strive to resolve this matter to your satisfaction and ensure that such issues do not recur in the future.\n" +
+                  "\n" +
+                  "Thank you for bringing this matter to our attention. We look forward to resolving it to your satisfaction.";
 
-            // Provide the correct path to the attachment file
-            File file = new File("C:\\Users\\ADMIN\\Downloads\\Customer Email Pdf.pdf");
+          // Provide the correct path to the attachment file
+          File file = new File("D:\\axis\\Capstone\\emailservice\\Customer Email Pdf.pdf");
 
-            boolean emailSent = emailService.sendEmailWithAttachment(to, from, subject, text, file);
+          boolean emailSent = emailService.sendEmailWithAttachment(to, from, subject, text, file);
 
-            if (emailSent) {
-                System.out.println("Email sent successfully");
-            } else {
-                System.out.println("There was an error sending the email");
-            }
+          if (emailSent) {
+              System.out.println("Email sent successfully");
+          } else {
+              System.out.println("There was an error sending the email");
+          }
 
-            ComplaintResponse complaintResponse = new ComplaintResponse(response, addedAdmin.getName(), faqs, addedAdmin.getAdminid());
+          ComplaintResponse complaintResponse = new ComplaintResponse(response, addedAdmin.getName(), faqs, addedAdmin.getAdminid());
 
-            return ResponseEntity.ok(complaintResponse);
+          return ResponseEntity.ok(complaintResponse);
 
-        } else {
-            return ResponseEntity.badRequest().body(new MessageResponse("Customer not found for the provided ID."));
-        }
-    }
+      } else {
+          return ResponseEntity.badRequest().body(new MessageResponse("Customer not found for the provided ID."));
+      }
+  }
     @GetMapping("/{customerid}") // To get customer details
   public ResponseEntity<?> getCustomerById(@PathVariable Long customerid) {
       Customer customer = customerRepository.findById(customerid).orElse(null);
@@ -304,6 +315,8 @@ public class CustomerController {
           return ResponseEntity.notFound().build();
       }
   }
+  
+  
   
 
 }

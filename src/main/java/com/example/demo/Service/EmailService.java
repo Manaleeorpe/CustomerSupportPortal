@@ -60,6 +60,49 @@ public class EmailService {
 
         return flag;
     }
+    
+    public boolean sendPasswordEmail(String to, String from, String subject, String password) {
+        boolean flag = false;
+
+        Properties properties = new Properties();
+        properties.put("mail.smtp.auth", true);
+        properties.put("mail.smtp.starttls.enable", true);
+        properties.put("mail.smtp.port", "587");
+        properties.put("mail.smtp.host", "smtp.gmail.com");
+
+        String username = "customerportal45"; // Username before @gmail.com
+        String appPassword = "rlpoqmtdvsyvegot"; // App password
+
+        Session session = Session.getInstance(properties, new Authenticator() {
+            @Override
+            protected PasswordAuthentication getPasswordAuthentication() {
+                return new PasswordAuthentication(username, appPassword);
+            }
+        });
+
+        try {
+            Message message = new MimeMessage(session);
+            message.setRecipient(Message.RecipientType.TO, new InternetAddress(to));
+            message.setFrom(new InternetAddress(from));
+            message.setSubject(subject);
+
+            MimeBodyPart part1 = new MimeBodyPart();
+            part1.setText("Your password is: " + password);
+
+            MimeMultipart multipart = new MimeMultipart();
+            multipart.addBodyPart(part1);
+
+            message.setContent(multipart);
+
+            Transport.send(message);
+            flag = true;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return flag;
+    }
 
 
 }

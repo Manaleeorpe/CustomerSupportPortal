@@ -1,15 +1,13 @@
 package com.example.demo.controller;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 import javax.validation.Valid;
 
-import com.example.demo.Repository.CustomerRepository;
-import com.example.demo.Service.EmailService;
-import com.example.demo.entity.Customer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
@@ -30,11 +28,14 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.demo.Repository.AdminRepository;
 import com.example.demo.Repository.ComplaintRepository;
+import com.example.demo.Repository.CustomerRepository;
 import com.example.demo.Repository.FAQRepository;
 import com.example.demo.Service.AdminService;
 import com.example.demo.Service.ComplaintService;
+import com.example.demo.Service.EmailService;
 import com.example.demo.entity.Admin;
 import com.example.demo.entity.Complaint;
+import com.example.demo.entity.Customer;
 import com.example.demo.entity.FAQ;
 import com.example.demo.payload.request.LoginRequest;
 import com.example.demo.payload.request.SignupRequest;
@@ -102,11 +103,11 @@ public class AdminController {
 
 	  @PostMapping("/signup")
 	  public ResponseEntity<?> registerUser(@Valid @RequestBody SignupRequest signUpRequest) {
-	      if (adminRepository.existsByName(signUpRequest.getUsername())) {
+		  if (customerRepository.existsByName(signUpRequest.getUsername()) || adminRepository.existsByName(signUpRequest.getUsername())) {
 	          return ResponseEntity.badRequest().body(new MessageResponse("Error: Username is already taken!"));
 	      }
 
-	      if (adminRepository.existsByEmail(signUpRequest.getEmail())) {
+	      if (customerRepository.existsByEmail(signUpRequest.getEmail()) || adminRepository.existsByEmail(signUpRequest.getEmail())) {
 	          return ResponseEntity.badRequest().body(new MessageResponse("Error: Email is already in use!"));
 	      }
 
@@ -176,57 +177,56 @@ public class AdminController {
 
 		} */
 
-	@PutMapping("/updateComplaint/{complaintid}")
-	@PreAuthorize("hasRole('ADMIN')")
-	public ResponseEntity<MessageResponse> updateComplaint(@PathVariable Long complaintid, @RequestBody Complaint updatedComplaint) {
-		Complaint complaint = complaintRepository.findById(complaintid).orElse(null);
-		String previousStatus = complaint.getStatus();
+	  @PutMapping("/updateComplaint/{complaintid}")
+		@PreAuthorize("hasRole('ADMIN')")
+		public ResponseEntity<MessageResponse> updateComplaint(@PathVariable Long complaintid, @RequestBody Complaint updatedComplaint) {
+			Complaint complaint = complaintRepository.findById(complaintid).orElse(null);
+			String previousStatus = complaint.getStatus();
 
-		if (previousStatus.equals("Pending") && updatedComplaint.getStatus().equals("Resolved")) {
-			complaintService.unassignAdmin(complaintid);
-			complaintService.CalculateHours();
-		}
-
-		Complaint existingComplaint = adminService.updateComplaintDetails(complaintid, updatedComplaint);
-
-		if (existingComplaint != null) {
-			// Get the customer associated with the complaint
-			Long customerId = existingComplaint.getCustomerid();
-			Customer customer = customerRepository.findById(customerId).orElse(null);
-
-			// Prepare email content based on the updated complaint status
-			String to = customer.getEmail();
-			String from = "customerportal45@gmail.com";
-			String subject = "Your Complaint Has Been Resolved (ID: " + complaintid + ")";
-			String text = "Dear Customer,\n" +
-						"\n" +
-						"We are pleased to inform you that your complaint with Complaint ID: " + complaintid + " has been resolved.\n" +
-						"\n" +
-						"Our team has successfully addressed your concerns. We hope the resolution meets your satisfaction.\n" +
-						"\n" +
-						"Thank you for your patience and understanding throughout this process.\n" +
-						"\n" +
-						"If you have any further questions or feedback, please do not hesitate to reach out to us.\n" +
-						"\n" +
-						"Best regards,\n" +
-						"Customer Support Team";
-            File file = new File("C:\\Users\\ADMIN\\Downloads\\Issue Resolved Pdf.pdf");
-
-			// Send email to the customer
-			boolean emailSent = emailService.sendEmailWithAttachment(to, from, subject, text, file);
-
-			if (emailSent) {
-				System.out.println("Email sent successfully");
-			} else {
-				System.out.println("There was an error sending the email");
+			if (previousStatus.equals("Pending") && updatedComplaint.getStatus().equals("Resolved")) {
+				complaintService.unassignAdmin(complaintid);
+				complaintService.CalculateHours();
 			}
 
-			return ResponseEntity.ok(new MessageResponse("Complaint details updated successfully"));
-		} else {
-			return ResponseEntity.notFound().build(); // Complaint not found
-		}
-	}
+			Complaint existingComplaint = adminService.updateComplaintDetails(complaintid, updatedComplaint);
 
+			if (existingComplaint != null) {
+				// Get the customer associated with the complaint
+				Long customerId = existingComplaint.getCustomerid();
+				Customer customer = customerRepository.findById(customerId).orElse(null);
+
+				// Prepare email content based on the updated complaint status
+				String to = customer.getEmail();
+				String from = "customerportal45@gmail.com";
+				String subject = "Your Complaint Has Been Resolved (ID: " + complaintid + ")";
+				String text = "Dear " + customer.getName() + ",\n" +
+							"\n" +
+							"We are pleased to inform you that your complaint with Complaint ID: " + complaintid + " has been resolved.\n" +
+							"\n" +
+							"Our team led by has successfully addressed your concerns. We hope the resolution meets your satisfaction.\n" +
+							"\n" +
+							"Thank you for your patience and understanding throughout this process.\n" +
+							"\n" +
+							"If you have any further questions or feedback, please do not hesitate to reach out to us.\n" +
+							"\n" +
+							"Best regards,\n" +
+							"Customer Support Team";
+	            File file = new File("C:\\Users\\ADMIN\\Downloads\\Issue Resolved Pdf.pdf");
+
+				// Send email to the customer
+				boolean emailSent = emailService.sendEmailWithAttachment(to, from, subject, text, file);
+
+				if (emailSent) {
+					System.out.println("Email sent successfully");
+				} else {
+					System.out.println("There was an error sending the email");
+				}
+
+				return ResponseEntity.ok(new MessageResponse("Complaint details updated successfully"));
+			} else {
+				return ResponseEntity.notFound().build(); // Complaint not found
+			}
+		}
 	@PostMapping("/addFaq")
 		@PreAuthorize("hasRole('ADMIN')")
 		public ResponseEntity<?> addFaq(@RequestBody FAQ faq) {
@@ -267,7 +267,27 @@ public class AdminController {
 			} else {
 				return ResponseEntity.notFound().build(); //FAQ not found
 			}
+		}
+		
+		@PostMapping("/addFaqs")
+		@PreAuthorize("hasRole('ADMIN')")
+		public ResponseEntity<?> addFaqs(@RequestBody List<FAQ> faqs) {
 
+		    List<FAQ> addedFaqs = new ArrayList<>();
+
+		    for (FAQ faq : faqs) {
+		        // Create a new FAQ entity
+		        FAQ newFaq = new FAQ();
+		        newFaq.setFaqType(faq.getFaqType());
+		        newFaq.setQuestion(faq.getQuestion());
+		        newFaq.setAnswer(faq.getAnswer());
+
+		        // Save the new FAQ entity to the database
+		        faqRepository.save(newFaq);
+		        addedFaqs.add(newFaq);
+		    }
+
+		    return ResponseEntity.ok(new MessageResponse("FAQs added successfully!"));
 
 		}
 		
