@@ -1,6 +1,7 @@
 package com.example.demo.controller;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -102,13 +103,13 @@ public class AdminController {
 
 	  @PostMapping("/signup")
 	  public ResponseEntity<?> registerUser(@Valid @RequestBody SignupRequest signUpRequest) {
-	      if (adminRepository.existsByName(signUpRequest.getUsername())) {
-	          return ResponseEntity.badRequest().body(new MessageResponse("Error: Username is already taken!"));
-	      }
+		  if (customerRepository.existsByName(signUpRequest.getUsername()) || adminRepository.existsByName(signUpRequest.getUsername())) {
+			  return ResponseEntity.badRequest().body(new MessageResponse("Error: Username is already taken!"));
+		  }
 
-	      if (adminRepository.existsByEmail(signUpRequest.getEmail())) {
-	          return ResponseEntity.badRequest().body(new MessageResponse("Error: Email is already in use!"));
-	      }
+		  if (customerRepository.existsByEmail(signUpRequest.getEmail()) || adminRepository.existsByEmail(signUpRequest.getEmail())) {
+			  return ResponseEntity.badRequest().body(new MessageResponse("Error: Email is already in use!"));
+		  }
 
 	      // Create new customer's account
 	      Admin admin = new Admin(signUpRequest.getAdminid(),
@@ -156,26 +157,6 @@ public class AdminController {
 			}
 		}
 
-	 /* @PutMapping("/updateComplaint/{complaintid}")
-	  @PreAuthorize("hasRole('ADMIN')")
-		public ResponseEntity<MessageResponse> updateComplaint(@PathVariable Long complaintid, @RequestBody Complaint updatedComplaint) {
-		  Complaint complaint = complaintRepository.findById(complaintid).orElse(null);
-		  String previousStatus = complaint.getStatus();
-		  
-			if (previousStatus.equals("Pending") && updatedComplaint.getStatus().equals("Resolved")) {
-				complaintService.unassignAdmin(complaintid);
-				complaintService.CalculateHours();
-	        }
-		  Complaint existingComplaint = adminService.updateComplaintDetails(complaintid, updatedComplaint);
-			if (existingComplaint != null) {
-				return ResponseEntity.ok(new MessageResponse("Complaint details updated successfully"));
-			} else {
-				return ResponseEntity.notFound().build(); //Complaint not found
-			}
-			
-
-		} */
-
 	@PutMapping("/updateComplaint/{complaintid}")
 	@PreAuthorize("hasRole('ADMIN')")
 	public ResponseEntity<MessageResponse> updateComplaint(@PathVariable Long complaintid, @RequestBody Complaint updatedComplaint) {
@@ -198,11 +179,11 @@ public class AdminController {
 			String to = customer.getEmail();
 			String from = "customerportal45@gmail.com";
 			String subject = "Your Complaint Has Been Resolved (ID: " + complaintid + ")";
-			String text = "Dear Customer,\n" +
+			String text = "Dear " + customer.getName() + ",\n" +
 						"\n" +
 						"We are pleased to inform you that your complaint with Complaint ID: " + complaintid + " has been resolved.\n" +
 						"\n" +
-						"Our team has successfully addressed your concerns. We hope the resolution meets your satisfaction.\n" +
+						"Our team led by has successfully addressed your concerns. We hope the resolution meets your satisfaction.\n" +
 						"\n" +
 						"Thank you for your patience and understanding throughout this process.\n" +
 						"\n" +
@@ -227,6 +208,7 @@ public class AdminController {
 		}
 	}
 
+
 	@PostMapping("/addFaq")
 		@PreAuthorize("hasRole('ADMIN')")
 		public ResponseEntity<?> addFaq(@RequestBody FAQ faq) {
@@ -243,6 +225,28 @@ public class AdminController {
 				return ResponseEntity.ok(new MessageResponse("FAQ added successfully!"));
 
 		}
+
+	@PostMapping("/addFaqs")
+	@PreAuthorize("hasRole('ADMIN')")
+	public ResponseEntity<?> addFaqs(@RequestBody List<FAQ> faqs) {
+
+		List<FAQ> addedFaqs = new ArrayList<>();
+
+		for (FAQ faq : faqs) {
+			// Create a new FAQ entity
+			FAQ newFaq = new FAQ();
+			newFaq.setFaqType(faq.getFaqType());
+			newFaq.setQuestion(faq.getQuestion());
+			newFaq.setAnswer(faq.getAnswer());
+
+			// Save the new FAQ entity to the database
+			faqRepository.save(newFaq);
+			addedFaqs.add(newFaq);
+		}
+
+		return ResponseEntity.ok(new MessageResponse("FAQs added successfully!"));
+
+	}
 
 		@GetMapping("/getFaq/{faqId}")
 		@PreAuthorize("hasRole('ADMIN')")
