@@ -25,8 +25,10 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.demo.Repository.AdminRepository;
 import com.example.demo.Repository.ComplaintRepository;
 import com.example.demo.Repository.CustomerRepository;
 import com.example.demo.Repository.FAQRepository;
@@ -35,6 +37,7 @@ import com.example.demo.entity.Complaint;
 import com.example.demo.entity.Customer;
 import com.example.demo.entity.FAQ;
 import com.example.demo.payload.request.LoginRequest;
+import com.example.demo.payload.request.ResetPasswordRequest;
 import com.example.demo.payload.request.SignupRequest;
 import com.example.demo.response.ComplaintResponse;
 import com.example.demo.response.MessageResponse;
@@ -59,6 +62,7 @@ public class CustomerController {
   @Autowired
   PasswordEncoder encoder;
   
+  
   @Autowired
   private CustomerService customerService;
   @Autowired
@@ -67,6 +71,12 @@ public class CustomerController {
   private ChatbotService chatbotService;
   @Autowired
   private EmailService emailService;
+  
+  @Autowired
+  private TokenService tokenService;
+  
+  @Autowired
+  private AdminRepository adminRepository;
 
   @Autowired
   private AdminService adminService;
@@ -116,14 +126,13 @@ public class CustomerController {
 
   @PostMapping("/signup")
   public ResponseEntity<?> registerUser(@Valid @RequestBody SignupRequest signUpRequest) {
-      if (customerRepository.existsByName(signUpRequest.getUsername())) {
+	  if (customerRepository.existsByName(signUpRequest.getUsername()) || adminRepository.existsByName(signUpRequest.getUsername())) {
           return ResponseEntity.badRequest().body(new MessageResponse("Error: Username is already taken!"));
       }
 
-      if (customerRepository.existsByEmail(signUpRequest.getEmail())) {
+      if (customerRepository.existsByEmail(signUpRequest.getEmail()) || adminRepository.existsByEmail(signUpRequest.getEmail())) {
           return ResponseEntity.badRequest().body(new MessageResponse("Error: Email is already in use!"));
       }
-
       // Create new customer's account
       Customer customer = new Customer(signUpRequest.getUsername(),
                                         signUpRequest.getEmail(),
@@ -142,9 +151,23 @@ public class CustomerController {
         .body(new MessageResponse("You've been signed out!"));
   }
 
-  @PostMapping("/{customerid}/add-complaint")
-  @PreAuthorize("hasRole('CUSTOMER')")
-  public ResponseEntity<?> addComplaint(@PathVariable Long customerid, @Valid @RequestBody Complaint complaint) {
+ 
+    @GetMapping("/{customerid}") // To get customer details
+  public ResponseEntity<?> getCustomerById(@PathVariable Long customerid) {
+      Customer customer = customerRepository.findById(customerid).orElse(null);
+
+      if (customer != null) {
+        
+          customer.setPassword(null); // Remove password from the response
+          
+          return ResponseEntity.ok(customer);
+      } else {
+          return ResponseEntity.notFound().build();
+      }
+  }
+    @PostMapping("/{customerid}/add-complaint")
+   // @PreAuthorize("hasRole('CUSTOMER')")
+    public ResponseEntity<?> addComplaint(@PathVariable Long customerid, @Valid @RequestBody Complaint complaint) {
         Customer customer = customerRepository.findById(customerid).orElse(null);
 
         if (customer != null) {
@@ -176,18 +199,18 @@ public class CustomerController {
             String to = customer.getEmail();
             String from = "customerportal45@gmail.com";
             String subject = "Acknowledgement of Your Recent Complaint";
-            String text = "Dear Customer,\n" +
+            String text = "Dear " + customer.getName() + ",\n" +
                     "\n" +
                     "We hope this email finds you well. We wanted to take a moment to acknowledge the complaint you recently submitted on our website with Complaint ID : " + newComplaint.getComplaintid() + ". Your feedback is important to us, and we're committed to addressing your concerns as swiftly as possible.\n" +
                     "\n" +
-                    "We are reaching out to let you know that your complaint is currently under review by our dedicated team . We understand the importance of timely resolution, and please be assured that we are actively working on a solution.\n" +
+                    "We are reaching out to let you know that your complaint is currently under review by our dedicated team led by " + addedAdmin.getName() + ". We understand the importance of timely resolution, and please be assured that we are actively working on a solution.\n" +
                     "\n" +
-                    "We take your concerns seriously and are committed to addressing them promptly. Our customer support team has been informed about your complaint and is already working on finding a solution. We will strive to resolve this matter to your satisfaction and ensure that such issues do not recur in the future.\n" +
+                    "We take your concerns seriously and are committed to addressing them promptly. Our customer support team, led by " + addedAdmin.getName() + ", has been informed about your complaint and is already working on finding a solution. We will strive to resolve this matter to your satisfaction and ensure that such issues do not recur in the future.\n" +
                     "\n" +
                     "Thank you for bringing this matter to our attention. We look forward to resolving it to your satisfaction.";
 
             // Provide the correct path to the attachment file
-            File file = new File("C:\\Users\\ADMIN\\Downloads\\Customer Email Pdf.pdf");
+            File file = new File("/Users/machd/Desktop/customer emails/Customer Email Pdf.pdf");
 
             boolean emailSent = emailService.sendEmailWithAttachment(to, from, subject, text, file);
 
@@ -205,21 +228,67 @@ public class CustomerController {
             return ResponseEntity.badRequest().body(new MessageResponse("Customer not found for the provided ID."));
         }
     }
-    @GetMapping("/{customerid}") // To get customer details
-  public ResponseEntity<?> getCustomerById(@PathVariable Long customerid) {
-      Customer customer = customerRepository.findById(customerid).orElse(null);
 
-      if (customer != null) {
-        
-          customer.setPassword(null); // Remove password from the response
-          
-          return ResponseEntity.ok(customer);
-      } else {
-          return ResponseEntity.notFound().build();
-      }
-  }
-  
-  
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestParam String email) {
+        Customer customer = customerRepository.findByEmail(email);
+
+        if (customer == null) {
+            return ResponseEntity.badRequest().body(new MessageResponse("No user found with the provided email."));
+        }
+
+        // Generate a password reset token and construct the reset link
+        String token = tokenService.generatePasswordResetToken(customer.getCustomerid());
+        String resetLink = "http://localhost:8080/auth/customer/reset-password?token=" + token;
+
+        // Compose the email content
+        String subject = "Password Reset Request";
+        String text = "To reset your password, please click the link below:\n" + resetLink;
+
+        // Send the password reset email
+        if (emailService.sendPasswordResetVerificationEmail(email, "your-email@example.com", subject, text)) {
+            return ResponseEntity.ok(new MessageResponse("Password reset instructions sent to your email."));
+        } else {
+            return ResponseEntity.badRequest().body(new MessageResponse("Failed to send password reset email."));
+        }
+    }
+    @GetMapping("/reset-password")
+    public ResponseEntity<?> resetPasswordPage(@RequestParam String token) {
+        Long customerId = tokenService.getUserIdFromToken(token);
+
+        if (customerId != null) {
+            // Return a JSON response containing the verified customerId
+            return ResponseEntity.ok().body("Token verified.");
+        } else {
+            return ResponseEntity.badRequest().body(new MessageResponse("Invalid token or token expired."));
+        }
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordRequest resetPasswordRequest) {
+        // Validate token and retrieve user ID
+        Long customerId = tokenService.getUserIdFromToken(resetPasswordRequest.getToken());
+
+        if (customerId != null) {
+            // Fetch the customer by ID
+            Customer customer = customerRepository.findById(customerId).orElse(null);
+
+            if (customer != null) {
+                // Update the customer's password
+                customer.setPassword(encoder.encode(resetPasswordRequest.getPassword()));
+                customerRepository.save(customer);
+
+                return ResponseEntity.ok(new MessageResponse("Password reset successfully."));
+            } else {
+                return ResponseEntity.badRequest().body(new MessageResponse("User not found."));
+            }
+        } else {
+            return ResponseEntity.badRequest().body(new MessageResponse("Invalid token or token expired."));
+        }
+    }
+
+
+    
   @PutMapping("UpdateCustomer/{customerid}")
   @PreAuthorize("hasRole('CUSTOMER')")
   public ResponseEntity<?> updateCustomerDetails(@PathVariable Long customerid, @RequestBody Customer updatedCustomer) {
