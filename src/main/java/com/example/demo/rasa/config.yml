@@ -1,0 +1,18 @@
+language: en
+pipeline:
+  - name: WhitespaceTokenizer
+  - name: CountVectorsFeaturizer
+  - name: DIETClassifier
+assistant_id: 20230814-172157-cross-cockatoo
+policies:
+  - name: MemoizationPolicy
+  - name: RulePolicy
+  - name: UnexpecTEDIntentPolicy
+    max_history: 5
+    epochs: 100
+  - name: TEDPolicy
+    max_history: 5
+    epochs: 100
+    constrain_similarities: true
+
+

@@ -1,0 +1,27 @@
+intents:
+  - greet
+  - bye
+  - thanks
+  - working_hours
+  - services_offered
+  - open_new_account
+  - post_complaint
+  - complaint
+
+responses:
+  utter_greet:
+    - text: "Hello! How can I assist you today?"
+  utter_bye:
+    - text: "Goodbye! Have a nice day!"
+  utter_thanks:
+    - text: "You're welcome! If you need further assistance, feel free to ask."
+  utter_working_hours:
+    - text: "Our working hours are from 9 AM to 5 PM, Monday to Friday."
+  utter_services_offered:
+    - text: "We offer a range of banking services, including account management, loans, and online banking."
+  utter_open_new_account:
+    - text: "To open a new bank account, visit the nearest bank. Or you can visit our FAQ page for more details."
+  utter_post_complaint:
+    - text: "To post a complaint, just go to the complaints section, or refer to our FAQs on how to post a complaint."
+  utter_complaint:
+    -text: "After we receive a complaint, a mail is sent to you regarding the same and the issue is resolved within 2 days. You will receive a mail after your issue has been resolved."

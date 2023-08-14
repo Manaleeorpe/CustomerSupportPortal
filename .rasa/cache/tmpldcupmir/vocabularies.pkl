@@ -1,0 +1,1 @@
+{"text": {"hi": 5, "hello": 3, "hey": 4, "there": 10, "greetings": 2, "bye": 0, "goodbye": 1, "see": 7, "you": 11, "later": 6, "thanks": 9, "thank": 8}, "intent": {"hi": 1, "bye": 0, "thanks": 2}, "response": null, "action_name": null, "action_text": null, "intent_response_key": null}

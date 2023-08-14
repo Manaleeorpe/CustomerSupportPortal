@@ -296,6 +296,30 @@ public class AdminController {
 		    return ResponseEntity.ok(new MessageResponse("FAQs added successfully!"));
 
 		}
+
+	@GetMapping("/getAllFaqs")
+	@PreAuthorize("hasRole('ADMIN')")
+	public ResponseEntity<?> getAllFaqs() {
+		List<FAQ> allFaqs = faqRepository.findAll();
+
+		if (!allFaqs.isEmpty()) {
+			return ResponseEntity.ok(allFaqs);
+		} else {
+			return ResponseEntity.notFound().build();
+		}
+	}
+
+	@GetMapping("/getAllFaqs/{faqType}")
+	@PreAuthorize("hasRole('ADMIN')")
+	public ResponseEntity<?> getAllFaqsByType(@RequestParam String faqType) {
+		List<FAQ> faqs = faqRepository.findAllByFaqType(faqType);
+
+		if (!faqs.isEmpty()) {
+			return ResponseEntity.ok(faqs);
+		} else {
+			return ResponseEntity.notFound().build();
+		}
+	}
 		//forgot password
 		
 		 @PostMapping("/forgot-password")

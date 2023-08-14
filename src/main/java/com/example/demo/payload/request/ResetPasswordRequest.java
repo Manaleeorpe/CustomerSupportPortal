@@ -10,15 +10,15 @@ import lombok.NoArgsConstructor;
 public class ResetPasswordRequest {
     private String token;
     private String password;
-	public ResetPasswordRequest() {
+	/*public ResetPasswordRequest() {
 		super();
 		// TODO Auto-generated constructor stub
 	}
 	public ResetPasswordRequest(String token, String password) {
-		super();
+
 		this.token = token;
 		this.password = password;
-	}
+	}*/
 	@Override
 	public String toString() {
 		return "ResetPasswordRequest [token=" + token + ", password=" + password + "]";
