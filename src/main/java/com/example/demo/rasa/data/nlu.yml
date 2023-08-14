@@ -1,0 +1,61 @@
+version: "3.1"
+nlu:
+  - intent: greet
+    examples: |
+      - Hi
+      - Hello
+      - Hey
+      - Hey there
+      - Greetings
+
+  - intent: bye
+    examples: |
+      - Bye
+      - Goodbye
+      - See you later
+
+  - intent: thanks
+    examples: |
+      - Thanks
+      - Thank you
+
+  - intent: working_hours
+    examples : |
+      - What are your working hours?
+      - When are you open?
+      - What time do you operate?
+
+  - intent: services_offered
+    examples: |
+      - What services do you offer?
+      - Can you tell me about your services?
+      - What banking services are available?
+
+  - intent: open_new_account
+    examples: |
+      - How can I open a new account?
+      - What's the process for opening an account?
+      - Can you help me with account opening?
+
+  - intent: post_complaint
+    examples: |
+      - How can I post a complaint?
+      - How to post a complaint?
+      - Where to post a complaint?
+
+  - intent: complaint
+    examples: |
+      - In how many days issues are resolved?
+      - Will I receive an email if my issues are resolved?
+      - How can I know that my complaint is registered or not?
+
+pipeline:
+  - name: WhitespaceTokenizer
+  - name: LanguageModelTokenizer
+  - name: CountVectorsFeaturizer
+  - name: DIETClassifier
+    epochs: 100
+  - name: EntitySynonymMapper
+  - name: ResponseSelector
+    epochs: 100
+

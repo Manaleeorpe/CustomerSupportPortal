@@ -8,8 +8,10 @@ import java.util.stream.Collectors;
 
 import javax.validation.Valid;
 
+import com.example.demo.Service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -31,13 +33,6 @@ import com.example.demo.Repository.AdminRepository;
 import com.example.demo.Repository.ComplaintRepository;
 import com.example.demo.Repository.CustomerRepository;
 import com.example.demo.Repository.FAQRepository;
-import com.example.demo.Service.AdminService;
-import com.example.demo.Service.ChatbotFAQsService;
-import com.example.demo.Service.ChatbotService;
-import com.example.demo.Service.ComplaintService;
-import com.example.demo.Service.CustomerService;
-import com.example.demo.Service.EmailService;
-import com.example.demo.Service.TokenService;
 import com.example.demo.entity.Admin;
 import com.example.demo.entity.Complaint;
 import com.example.demo.entity.Customer;
@@ -85,12 +80,15 @@ public class CustomerController {
 
   @Autowired
   private ChatbotFAQsService chatbotFAQsService;
+
+  @Autowired
+  private ChatbotInteractService chatbotInteractService;
   
   @Autowired
   private TokenService tokenService;
 
     @Autowired
-    public CustomerController(CustomerService customerService, ComplaintService complaintService, ChatbotService chatbotService, ChatbotFAQsService chatbotFAQsService, EmailService emailService) {
+    public CustomerController(CustomerService customerService, ComplaintService complaintService, ChatbotService chatbotService, ChatbotFAQsService chatbotFAQsService, EmailService emailService, ChatbotInteractService chatbotInteractService) {
         super();
         this.chatbotFAQsService = chatbotFAQsService;
         this.customerService = customerService;
@@ -98,6 +96,7 @@ public class CustomerController {
         this.chatbotService = chatbotService;
         this.emailService = emailService;
         this.tokenService = tokenService;
+        this.chatbotInteractService = chatbotInteractService;
     }
 
 @Autowired
@@ -295,33 +294,33 @@ public class CustomerController {
             return ResponseEntity.badRequest().body(new MessageResponse("Customer not found for the provided ID."));
         }
     }
-  
-  @GetMapping("/getFaq/{faqId}")
-  @PreAuthorize("hasRole('CUSTOMER')")
-  public ResponseEntity<?> getFaqById(@PathVariable Long faqId) {
-      FAQ faq = faqRepository.findById(faqId).orElse(null);
 
-      if(faq != null) {
-          return ResponseEntity.ok(faq);
-      } else {
-          return ResponseEntity.notFound().build();
-      }
+    @GetMapping("/getAllFaqs")
+    @PreAuthorize("hasRole('CUSTOMER')")
+    public ResponseEntity<?> getAllFaqs() {
+        List<FAQ> allFaqs = faqRepository.findAll();
 
-  }
-  
-  @GetMapping("/getAllFaqs/{faqType}")
-  
-  public ResponseEntity<?> getAllFaqsByType(@PathVariable String faqType) {
-      List<FAQ> faqs = faqRepository.findAllByFaqType(faqType);
+        if (!allFaqs.isEmpty()) {
+            return ResponseEntity.ok(allFaqs);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
 
-      if (!faqs.isEmpty()) {
-          return ResponseEntity.ok(faqs);
-      } else {
-          return ResponseEntity.notFound().build();
-      }
-  }
-  
-  //forgot password
+    @GetMapping("/getAllFaqs/{faqType}")
+    @PreAuthorize("hasRole('CUSTOMER')")
+    public ResponseEntity<?> getAllFaqsByType(@RequestParam String faqType) {
+        List<FAQ> faqs = faqRepository.findAllByFaqType(faqType);
+
+        if (!faqs.isEmpty()) {
+            return ResponseEntity.ok(faqs);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+
+    //forgot password
   @PostMapping("/forgot-password")
   public ResponseEntity<?> forgotPassword(@RequestParam String email) {
       Customer customer = customerRepository.findByEmail(email);
@@ -379,8 +378,11 @@ public class CustomerController {
           return ResponseEntity.badRequest().body(new MessageResponse("Invalid token or token expired."));
       }
   }
-  
-  
-  
 
+    @PostMapping("/chat")
+    public ResponseEntity<String> chatWithCustomer(@RequestBody String userInput) {
+        String response = chatbotInteractService.generateResponse(userInput);
+        return new ResponseEntity<>(response, HttpStatus.OK);
+
+    }
 }
