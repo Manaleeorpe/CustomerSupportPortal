@@ -10,7 +10,6 @@ import javax.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -38,11 +37,13 @@ import com.example.demo.Service.ChatbotService;
 import com.example.demo.Service.ComplaintService;
 import com.example.demo.Service.CustomerService;
 import com.example.demo.Service.EmailService;
+import com.example.demo.Service.TokenService;
 import com.example.demo.entity.Admin;
 import com.example.demo.entity.Complaint;
 import com.example.demo.entity.Customer;
 import com.example.demo.entity.FAQ;
 import com.example.demo.payload.request.LoginRequest;
+import com.example.demo.payload.request.ResetPasswordRequest;
 import com.example.demo.payload.request.SignupRequest;
 import com.example.demo.response.ComplaintResponse;
 import com.example.demo.response.MessageResponse;
@@ -84,6 +85,9 @@ public class CustomerController {
 
   @Autowired
   private ChatbotFAQsService chatbotFAQsService;
+  
+  @Autowired
+  private TokenService tokenService;
 
     @Autowired
     public CustomerController(CustomerService customerService, ComplaintService complaintService, ChatbotService chatbotService, ChatbotFAQsService chatbotFAQsService, EmailService emailService) {
@@ -93,6 +97,7 @@ public class CustomerController {
         this.complaintService = complaintService;
         this.chatbotService = chatbotService;
         this.emailService = emailService;
+        this.tokenService = tokenService;
     }
 
 @Autowired
@@ -313,6 +318,65 @@ public class CustomerController {
           return ResponseEntity.ok(faqs);
       } else {
           return ResponseEntity.notFound().build();
+      }
+  }
+  
+  //forgot password
+  @PostMapping("/forgot-password")
+  public ResponseEntity<?> forgotPassword(@RequestParam String email) {
+      Customer customer = customerRepository.findByEmail(email);
+
+      if (customer == null) {
+          return ResponseEntity.badRequest().body(new MessageResponse("No user found with the provided email."));
+      }
+
+      // Generate a password reset token and construct the reset link
+      String token = tokenService.generatePasswordResetToken(customer.getCustomerid());
+      String resetLink = "http://localhost:8080/auth/customer/reset-password?token=" + token;
+
+      // Compose the email content
+      String subject = "Password Reset Request";
+      String text = "To reset your password, please click the link below:\n" + resetLink;
+
+      // Send the password reset email
+      if (emailService.sendPasswordResetVerificationEmail(email, "your-email@example.com", subject, text)) {
+          return ResponseEntity.ok(new MessageResponse("Password reset instructions sent to your email."));
+      } else {
+          return ResponseEntity.badRequest().body(new MessageResponse("Failed to send password reset email."));
+      }
+  }
+  @GetMapping("/reset-password")
+  public ResponseEntity<?> resetPasswordPage(@RequestParam String token) {
+      Long customerId = tokenService.getUserIdFromToken(token);
+
+      if (customerId != null) {
+          // Return a JSON response containing the verified customerId
+          return ResponseEntity.ok().body("Token verified.");
+      } else {
+          return ResponseEntity.badRequest().body(new MessageResponse("Invalid token or token expired."));
+      }
+  }
+
+  @PostMapping("/reset-password")
+  public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordRequest resetPasswordRequest) {
+      // Validate token and retrieve user ID
+      Long customerId = tokenService.getUserIdFromToken(resetPasswordRequest.getToken());
+
+      if (customerId != null) {
+          // Fetch the customer by ID
+          Customer customer = customerRepository.findById(customerId).orElse(null);
+
+          if (customer != null) {
+              // Update the customer's password
+              customer.setPassword(encoder.encode(resetPasswordRequest.getPassword()));
+              customerRepository.save(customer);
+
+              return ResponseEntity.ok(new MessageResponse("Password reset successfully."));
+          } else {
+              return ResponseEntity.badRequest().body(new MessageResponse("User not found."));
+          }
+      } else {
+          return ResponseEntity.badRequest().body(new MessageResponse("Invalid token or token expired."));
       }
   }
   

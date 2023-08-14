@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.demo.Repository.AdminRepository;
@@ -33,11 +34,13 @@ import com.example.demo.Repository.FAQRepository;
 import com.example.demo.Service.AdminService;
 import com.example.demo.Service.ComplaintService;
 import com.example.demo.Service.EmailService;
+import com.example.demo.Service.TokenService;
 import com.example.demo.entity.Admin;
 import com.example.demo.entity.Complaint;
 import com.example.demo.entity.Customer;
 import com.example.demo.entity.FAQ;
 import com.example.demo.payload.request.LoginRequest;
+import com.example.demo.payload.request.ResetPasswordRequest;
 import com.example.demo.payload.request.SignupRequest;
 import com.example.demo.response.MessageResponse;
 import com.example.demo.response.UserInfoResponse;
@@ -77,6 +80,9 @@ public class AdminController {
 
 	  @Autowired
 	  private EmailService emailService;
+	  
+	  @Autowired
+	  private TokenService tokenService;
 
 	  @PostMapping("/signin")
 	  public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
@@ -290,6 +296,66 @@ public class AdminController {
 		    return ResponseEntity.ok(new MessageResponse("FAQs added successfully!"));
 
 		}
+		//forgot password
+		
+		 @PostMapping("/forgot-password")
+		  public ResponseEntity<?> adminForgotPassword(@RequestParam String email) {
+		      Admin admin = adminRepository.findByEmail(email);
+
+		      if (admin == null) {
+		          return ResponseEntity.badRequest().body(new MessageResponse("No admin found with the provided email."));
+		      }
+
+		      // Generate a password reset token and construct the reset link
+		      String token = tokenService.generatePasswordResetToken(admin.getAdminid());
+		      String resetLink = "http://localhost:8080/auth/admin/reset-password?token=" + token;
+
+		      // Compose the email content
+		      String subject = "Admin Password Reset Request";
+		      String text = "To reset your password, please click the link below:\n" + resetLink;
+
+		      // Send the password reset email
+		      if (emailService.sendPasswordResetVerificationEmail(email, "your-email@example.com", subject, text)) {
+		          return ResponseEntity.ok(new MessageResponse("Password reset instructions sent to your email."));
+		      } else {
+		          return ResponseEntity.badRequest().body(new MessageResponse("Failed to send password reset email."));
+		      }
+		  }
+
+		  @GetMapping("/reset-password")
+		  public ResponseEntity<?> adminResetPasswordPage(@RequestParam String token) {
+		      Long adminId = tokenService.getUserIdFromToken(token);
+
+		      if (adminId != null) {
+		          // Return a JSON response containing the verified adminId
+		    	  return ResponseEntity.ok().body("Token verified.");
+		      } else {
+		          return ResponseEntity.badRequest().body(new MessageResponse("Invalid token or token expired."));
+		      }
+		  }
+
+		  @PostMapping("/reset-password")
+		  public ResponseEntity<?> adminResetPassword(@Valid @RequestBody ResetPasswordRequest resetPasswordRequest) {
+		      // Validate token and retrieve admin ID
+		      Long adminId = tokenService.getUserIdFromToken(resetPasswordRequest.getToken());
+
+		      if (adminId != null) {
+		          // Fetch the admin by ID
+		          Admin admin = adminRepository.findById(adminId).orElse(null);
+
+		          if (admin != null) {
+		              // Update the admin's password
+		              admin.setPassword(encoder.encode(resetPasswordRequest.getPassword()));
+		              adminRepository.save(admin);
+
+		              return ResponseEntity.ok(new MessageResponse("Password reset successfully."));
+		          } else {
+		              return ResponseEntity.badRequest().body(new MessageResponse("Admin not found."));
+		          }
+		      } else {
+		          return ResponseEntity.badRequest().body(new MessageResponse("Invalid token or token expired."));
+		      }
+		  }
 		
 		
 		

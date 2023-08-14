@@ -61,7 +61,7 @@ public class EmailService {
         return flag;
     }
     
-    public boolean sendPasswordEmail(String to, String from, String subject, String password) {
+    public boolean sendPasswordResetVerificationEmail(String to, String from, String subject, String verificationLink) {
         boolean flag = false;
 
         Properties properties = new Properties();
@@ -87,7 +87,7 @@ public class EmailService {
             message.setSubject(subject);
 
             MimeBodyPart part1 = new MimeBodyPart();
-            part1.setText("Your password is: " + password);
+            part1.setText("To verify your password reset request, please click the link below:\n" + verificationLink);
 
             MimeMultipart multipart = new MimeMultipart();
             multipart.addBodyPart(part1);
