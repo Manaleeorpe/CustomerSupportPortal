@@ -58,7 +58,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
       .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).and()
       .authorizeRequests()
       .antMatchers("/auth/customer/signin", "/auth/customer/signup","/auth/customer/signout","/auth/customer/forgot-password").permitAll()
-      .antMatchers("/auth/admin/signin", "/auth/admin/signup").permitAll()
+      .antMatchers("/auth/admin/signin", "/auth/admin/signup","/auth/admin/forgot-password").permitAll()
       .antMatchers(HttpMethod.POST, "/auth/customer/*/add-complaint").permitAll()
       .antMatchers("/api/test/**").permitAll()
       .antMatchers("/auth/customer/**").authenticated()

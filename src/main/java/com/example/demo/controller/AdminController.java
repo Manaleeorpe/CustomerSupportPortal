@@ -18,6 +18,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -49,6 +50,7 @@ import com.example.demo.security.services.UserDetailsImpl;
 
 @RestController
 @RequestMapping("/auth/admin")
+@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
 public class AdminController {
 
 	@Autowired
@@ -380,10 +382,6 @@ public class AdminController {
 		          return ResponseEntity.badRequest().body(new MessageResponse("Invalid token or token expired."));
 		      }
 		  }
-		
-		
-		
-
 
 
 }
