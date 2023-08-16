@@ -3,7 +3,6 @@ package com.example.demo.controller;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 import javax.validation.Valid;
@@ -50,8 +49,8 @@ import com.example.demo.security.services.UserDetailsImpl;
 @RestController
 @RequestMapping("/auth/admin")
 public class AdminController {
-
-	@Autowired
+	
+	  @Autowired
 	  AuthenticationManager authenticationManager;
 
 	  @Autowired
@@ -140,16 +139,14 @@ public class AdminController {
 	  
 	  @GetMapping("/{adminId}") //admin details
 	  public ResponseEntity<?> getAdminDetails(@PathVariable Long adminId) {
-	      Optional<Admin> adminOptional = adminRepository.findById(adminId);
+		    Admin admin = adminService.getAdminDetailsById(adminId);
 
-	      if (adminOptional.isPresent()) {
-	          Admin admin = adminOptional.get();
-	          admin.setPassword(null);
-	          return ResponseEntity.ok(admin);
-	      } else {
-	          return ResponseEntity.notFound().build();
-	      }
-	  }
+		    if (admin != null) {
+		        return ResponseEntity.ok(admin);
+		    } else {
+		        return ResponseEntity.notFound().build();
+		    }
+		}
 	  
 	  @PutMapping("/update/{adminId}")
 	  @PreAuthorize("hasRole('ADMIN')")
@@ -380,6 +377,8 @@ public class AdminController {
 		          return ResponseEntity.badRequest().body(new MessageResponse("Invalid token or token expired."));
 		      }
 		  }
+		  
+		  
 		
 		
 		

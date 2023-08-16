@@ -71,5 +71,19 @@ public class AdminService {
             return null; // FAQ not found
         }
     }
+    
+    public Admin getAdminDetailsById(Long adminId) {
+        Optional<Admin> adminOptional = adminRepository.findById(adminId);
+        
+        if (adminOptional.isPresent()) {
+            Admin admin = adminOptional.get();
+            admin.setPassword(null);
+            return admin;
+        } else {
+            return null; 
+        }
+    }
+    
+    
 
     }
