@@ -48,6 +48,8 @@ nlu:
       - In how many days issues are resolved?
       - Will I receive an email if my issues are resolved?
       - How can I know that my complaint is registered or not?
+      - What will happen after I post a complaint?
+      - Steps after posting a complaint
 
 pipeline:
   - name: WhitespaceTokenizer
