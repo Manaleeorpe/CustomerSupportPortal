@@ -32,11 +32,69 @@ public class Complaint {
 
     private String description; // New field for complaint description
     
-    private Double rating; // New field for complaint rating
+    private Double rating; // New field for complaDouble rating
     
     private Long adminid;
+    
+    private String customerName;
+    
+    private String AdminComments;
+    
+    public String getAdminComments() {
+		return AdminComments;
+	}
 
-    public Long getAdminid() {
+	public void setAdminComments(String adminComments) {
+		AdminComments = adminComments;
+	}
+
+	public String getCustomerName() {
+		return customerName;
+	}
+
+	public Complaint(Long complaintid, @NotNull(message = "Complaint type is mandatory") String complaintType,
+			@NotNull(message = "Customer ID is mandatory") Long customerid,
+			@NotNull(message = "Date is mandatory") Date date, @NotNull(message = "Status is mandatory") String status,
+			String description, Double rating, Long adminid, String customerName, String adminComments,
+			Customer customer, Admin admin) {
+		super();
+		this.complaintid = complaintid;
+		this.complaintType = complaintType;
+		this.customerid = customerid;
+		this.date = date;
+		this.status = status;
+		this.description = description;
+		this.rating = rating;
+		this.adminid = adminid;
+		this.customerName = customerName;
+		AdminComments = adminComments;
+		this.customer = customer;
+		this.admin = admin;
+	}
+
+	public void setCustomerName(String customerName) {
+		this.customerName = customerName;
+	}
+
+	public Complaint(Long complaintid, @NotNull(message = "Complaint type is mandatory") String complaintType,
+			@NotNull(message = "Customer ID is mandatory") Long customerid,
+			@NotNull(message = "Date is mandatory") Date date, @NotNull(message = "Status is mandatory") String status,
+			String description, Double rating, Long adminid, String customerName, Customer customer, Admin admin) {
+		super();
+		this.complaintid = complaintid;
+		this.complaintType = complaintType;
+		this.customerid = customerid;
+		this.date = date;
+		this.status = status;
+		this.description = description;
+		this.rating = rating;
+		this.adminid = adminid;
+		this.customerName = customerName;
+		this.customer = customer;
+		this.admin = admin;
+	}
+
+	public Long getAdminid() {
 		return adminid;
 	}
 

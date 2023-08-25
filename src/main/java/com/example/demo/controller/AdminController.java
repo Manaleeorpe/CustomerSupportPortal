@@ -48,8 +48,9 @@ import com.example.demo.response.UserInfoResponse;
 import com.example.demo.security.jwt.JwtUtils;
 import com.example.demo.security.services.UserDetailsImpl;
 
-@CrossOrigin(origins = "http://localhost:3000")
+
 @RestController
+@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
 @RequestMapping("/auth/admin")
 public class AdminController {
 	
@@ -163,26 +164,6 @@ public class AdminController {
 			}
 		}
 
-	 /* @PutMapping("/updateComplaint/{complaintid}")
-	  @PreAuthorize("hasRole('ADMIN')")
-		public ResponseEntity<MessageResponse> updateComplaint(@PathVariable Long complaintid, @RequestBody Complaint updatedComplaint) {
-		  Complaint complaint = complaintRepository.findById(complaintid).orElse(null);
-		  String previousStatus = complaint.getStatus();
-		  
-			if (previousStatus.equals("Pending") && updatedComplaint.getStatus().equals("Resolved")) {
-				complaintService.unassignAdmin(complaintid);
-				complaintService.CalculateHours();
-	        }
-		  Complaint existingComplaint = adminService.updateComplaintDetails(complaintid, updatedComplaint);
-			if (existingComplaint != null) {
-				return ResponseEntity.ok(new MessageResponse("Complaint details updated successfully"));
-			} else {
-				return ResponseEntity.notFound().build(); //Complaint not found
-			}
-			
-
-		} */
-
 	  @PutMapping("/updateComplaint/{complaintid}")
 		@PreAuthorize("hasRole('ADMIN')")
 		public ResponseEntity<MessageResponse> updateComplaint(@PathVariable Long complaintid, @RequestBody Complaint updatedComplaint) {
@@ -195,6 +176,7 @@ public class AdminController {
 			}
 
 			Complaint existingComplaint = adminService.updateComplaintDetails(complaintid, updatedComplaint);
+			
 
 			if (existingComplaint != null) {
 				// Get the customer associated with the complaint
@@ -217,7 +199,7 @@ public class AdminController {
 							"\n" +
 							"Best regards,\n" +
 							"Customer Support Team";
-	            File file = new File("C:\\Users\\ADMIN\\Downloads\\Issue Resolved Pdf.pdf");
+	            File file = new File("D:\\axis\\Capstone\\emailservice\\Issue Resolved Pdf.pdf");
 
 				// Send email to the customer
 				boolean emailSent = emailService.sendEmailWithAttachment(to, from, subject, text, file);
@@ -298,7 +280,6 @@ public class AdminController {
 		}
 
 	@GetMapping("/getAllFaqs")
-	@PreAuthorize("hasRole('ADMIN')")
 	public ResponseEntity<?> getAllFaqs() {
 		List<FAQ> allFaqs = faqRepository.findAll();
 
@@ -310,8 +291,7 @@ public class AdminController {
 	}
 
 	@GetMapping("/getAllFaqs/{faqType}")
-	@PreAuthorize("hasRole('ADMIN')")
-	public ResponseEntity<?> getAllFaqsByType(@RequestParam String faqType) {
+	public ResponseEntity<?> getAllFaqsByType(@PathVariable String faqType) {
 		List<FAQ> faqs = faqRepository.findAllByFaqType(faqType);
 
 		if (!faqs.isEmpty()) {
@@ -380,12 +360,5 @@ public class AdminController {
 		          return ResponseEntity.badRequest().body(new MessageResponse("Invalid token or token expired."));
 		      }
 		  }
-		  
-		  
-		
-		
-		
-
-
 
 }

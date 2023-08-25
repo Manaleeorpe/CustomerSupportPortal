@@ -179,6 +179,7 @@ public class CustomerController {
           newComplaint.setDate(new Date());
           newComplaint.setStatus("Pending");
           newComplaint.setDescription(complaint.getDescription());
+          newComplaint.setCustomerName(customer.getName());
 
           // Save the new complaint entity to the database
           complaintRepository.save(newComplaint);
@@ -236,39 +237,45 @@ public class CustomerController {
   }
   
   
-  @PutMapping("UpdateCustomer/{customerid}")
+    @PutMapping("UpdateCustomer/{customerid}")
+    @PreAuthorize("hasRole('CUSTOMER')")
+    public ResponseEntity<?> updateCustomerDetails(
+        @PathVariable Long customerid,
+        @RequestBody Customer updatedCustomer
+    ) {
+        Customer existingCustomer = customerRepository.findById(customerid).orElse(null);
+
+        if (existingCustomer == null) {
+            return ResponseEntity.notFound().build(); // Customer not found
+        }
+
+        // Update the fields that you want to change
+        existingCustomer.setName(updatedCustomer.getName());
+        existingCustomer.setEmail(updatedCustomer.getEmail());
+        existingCustomer.setPhoneNumber(updatedCustomer.getPhoneNumber()); 
+        // Exclude password update
+
+        // Save the changes
+        Customer updated = customerRepository.save(existingCustomer);
+
+        return ResponseEntity.ok(new MessageResponse("Customer details updated successfully!"));
+    }
+
+  @PutMapping("/rate/{complaintid}")
   @PreAuthorize("hasRole('CUSTOMER')")
-  public ResponseEntity<?> updateCustomerDetails(@PathVariable Long customerid, @RequestBody Customer updatedCustomer) {
-      Customer updated = customerService.updateCustomerDetails(customerid, updatedCustomer);
+  public ResponseEntity<?> rateComplaint(@RequestBody Double rating,@PathVariable Long complaintid) {
+      Complaint complaint = complaintRepository.findById(complaintid).orElse(null);
 
-      if (updated != null) {
-          return ResponseEntity.ok(new MessageResponse("Customer details updated successfully!"));
-      } else {
-          return ResponseEntity.notFound().build(); // Customer not found
-      }
-  }
-
-  @PutMapping("/{customerid}/rate")
-  @PreAuthorize("hasRole('CUSTOMER')")
-  public ResponseEntity<?> rateComplaint(@PathVariable Long customerid, @RequestBody Double rating) {
-      Customer customer = customerRepository.findById(customerid).orElse(null);
-
-      if (customer != null) {
-          List<Complaint> customerComplaints = customer.getComplaints(); // Use the new getter method
-
-          for (Complaint complaint : customerComplaints) {
-              if (complaint.getStatus().equals("Resolved")) {
-                  complaint.setRating(rating);
-                  complaintRepository.save(complaint);
-              
-          }
+      if (complaint != null) {
+    	  if (complaint.getStatus().equals("Resolved")) {
+              complaint.setRating(rating);
+              complaintRepository.save(complaint);
           }
           return ResponseEntity.ok(new MessageResponse("Complaints rated successfully!"));
       } else {
           return ResponseEntity.notFound().build(); // Customer not found
       }
   }
-
     @PutMapping("/{customerid}/cancel-complaint/{complaintid}")
     public ResponseEntity<?> cancelComplaint(@PathVariable Long customerid, @PathVariable Long complaintid) {
         Customer customer = customerRepository.findById(customerid).orElse(null);
@@ -297,7 +304,6 @@ public class CustomerController {
     }
 
     @GetMapping("/getAllFaqs")
-    @PreAuthorize("hasRole('CUSTOMER')")
     public ResponseEntity<?> getAllFaqs() {
         List<FAQ> allFaqs = faqRepository.findAll();
 
@@ -309,7 +315,6 @@ public class CustomerController {
     }
 
     @GetMapping("/getAllFaqs/{faqType}")
-    @PreAuthorize("hasRole('CUSTOMER')")
     public ResponseEntity<?> getAllFaqsByType(@RequestParam String faqType) {
         List<FAQ> faqs = faqRepository.findAllByFaqType(faqType);
 
@@ -322,64 +327,63 @@ public class CustomerController {
 
 
     //forgot password
-  @PostMapping("/forgot-password")
-  public ResponseEntity<?> forgotPassword(@RequestParam String email) {
-      Customer customer = customerRepository.findByEmail(email);
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestParam String email) {
+        Customer customer = customerRepository.findByEmail(email);
 
-      if (customer == null) {
-          return ResponseEntity.badRequest().body(new MessageResponse("No user found with the provided email."));
-      }
+        if (customer == null) {
+            return ResponseEntity.badRequest().body(new MessageResponse("No user found with the provided email."));
+        }
 
-      // Generate a password reset token and construct the reset link
-      String token = tokenService.generatePasswordResetToken(customer.getCustomerid());
-      String resetLink = "http://localhost:8080/auth/customer/reset-password?token=" + token;
+        // Generate a password reset token and construct the reset link
+        String token = tokenService.generatePasswordResetToken(customer.getCustomerid());
+        String resetLink = "http://localhost:3000/reset-password?token=" + token;
 
-      // Compose the email content
-      String subject = "Password Reset Request";
-      String text = "To reset your password, please click the link below:\n" + resetLink;
+        // Compose the email content
+        String subject = "Password Reset Request";
+        String text = "To reset your password, please click the link below:\n" + resetLink;
 
-      // Send the password reset email
-      if (emailService.sendPasswordResetVerificationEmail(email, "your-email@example.com", subject, text)) {
-          return ResponseEntity.ok(new MessageResponse("Password reset instructions sent to your email."));
-      } else {
-          return ResponseEntity.badRequest().body(new MessageResponse("Failed to send password reset email."));
-      }
-  }
-  @GetMapping("/reset-password")
-  public ResponseEntity<?> resetPasswordPage(@RequestParam String token) {
-      Long customerId = tokenService.getUserIdFromToken(token);
+        // Send the password reset email
+        if (emailService.sendPasswordResetVerificationEmail(email, "your-email@example.com", subject, text)) {
+            return ResponseEntity.ok(new MessageResponse("Password reset instructions sent to your email."));
+        } else {
+            return ResponseEntity.badRequest().body(new MessageResponse("Failed to send password reset email."));
+        }
+    }
+    @GetMapping("/reset-password")
+    public ResponseEntity<?> resetPasswordPage(@RequestParam String token) {
+        Long customerId = tokenService.getUserIdFromToken(token);
 
-      if (customerId != null) {
-          // Return a JSON response containing the verified customerId
-          return ResponseEntity.ok().body("Token verified.");
-      } else {
-          return ResponseEntity.badRequest().body(new MessageResponse("Invalid token or token expired."));
-      }
-  }
+        if (customerId != null) {
+            // Return a JSON response containing the verified customerId
+            return ResponseEntity.ok().body("Token verified.");
+        } else {
+            return ResponseEntity.badRequest().body(new MessageResponse("Invalid token or token expired."));
+        }
+    }
 
-  @PostMapping("/reset-password")
-  public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordRequest resetPasswordRequest) {
-      // Validate token and retrieve user ID
-      Long customerId = tokenService.getUserIdFromToken(resetPasswordRequest.getToken());
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordRequest resetPasswordRequest) {
+        // Validate token and retrieve user ID
+        Long customerId = tokenService.getUserIdFromToken(resetPasswordRequest.getToken());
 
-      if (customerId != null) {
-          // Fetch the customer by ID
-          Customer customer = customerRepository.findById(customerId).orElse(null);
+        if (customerId != null) {
+            // Fetch the customer by ID
+            Customer customer = customerRepository.findById(customerId).orElse(null);
 
-          if (customer != null) {
-              // Update the customer's password
-              customer.setPassword(encoder.encode(resetPasswordRequest.getPassword()));
-              customerRepository.save(customer);
+            if (customer != null) {
+                // Update the customer's password
+                customer.setPassword(encoder.encode(resetPasswordRequest.getPassword()));
+                customerRepository.save(customer);
 
-              return ResponseEntity.ok(new MessageResponse("Password reset successfully."));
-          } else {
-              return ResponseEntity.badRequest().body(new MessageResponse("User not found."));
-          }
-      } else {
-          return ResponseEntity.badRequest().body(new MessageResponse("Invalid token or token expired."));
-      }
-  }
-
+                return ResponseEntity.ok(new MessageResponse("Password reset successfully."));
+            } else {
+                return ResponseEntity.badRequest().body(new MessageResponse("User not found."));
+            }
+        } else {
+            return ResponseEntity.badRequest().body(new MessageResponse("Invalid token or token expired."));
+        }
+    }
     @PostMapping("/chat")
     public ResponseEntity<String> chatWithCustomer(@RequestBody String userInput) {
         String response = chatbotInteractService.generateResponse(userInput);

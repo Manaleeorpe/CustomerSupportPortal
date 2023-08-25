@@ -31,7 +31,6 @@ public class AdminService {
             existingAdmin.setName(updatedAdmin.getName());
             existingAdmin.setEmail(updatedAdmin.getEmail());
             existingAdmin.setPhone_number(updatedAdmin.getPhone_number());
-            existingAdmin.setAdminType(updatedAdmin.getAdminType());
 
             // Update other fields as needed
 
@@ -40,13 +39,13 @@ public class AdminService {
             return null; // Admin not found
         }
     }
-
     public Complaint updateComplaintDetails(Long complaintid, Complaint updatedComplaint) {
         Complaint existingComplaint = complaintRepository.findById(complaintid).orElse(null);
 
         if (existingComplaint != null) {
             existingComplaint.setDate(new Date());
             existingComplaint.setStatus(updatedComplaint.getStatus());
+            existingComplaint.setAdminComments(updatedComplaint.getAdminComments());
 
             // Update other fields as needed
 
