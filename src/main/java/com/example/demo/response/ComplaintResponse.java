@@ -10,14 +10,25 @@ public class ComplaintResponse {
 	private String adminName;
 	private List<FAQ> faqs;
 	private Long adminid;
-
-	public ComplaintResponse(String message, String adminName, List<FAQ> faqs, Long adminid) {
+	private Long complaintid;
+	
+	public ComplaintResponse(String message, String adminName, List<FAQ> faqs, Long adminid, Long complaintid) {
 		super();
 		this.message = message;
 		this.adminName = adminName;
 		this.faqs = faqs;
 		this.adminid = adminid;
+		this.complaintid = complaintid;
 	}
+	
+	public Long getComplaintid() {
+		return complaintid;
+	}
+
+	public void setComplaintid(Long complaintid) {
+		this.complaintid = complaintid;
+	}
+
 	public Long getAdminid() {
 		return adminid;
 	}

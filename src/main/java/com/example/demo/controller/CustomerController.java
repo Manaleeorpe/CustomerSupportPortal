@@ -214,7 +214,7 @@ public class CustomerController {
               System.out.println("There was an error sending the email");
           }
 
-          ComplaintResponse complaintResponse = new ComplaintResponse(response, addedAdmin.getName(), faqs, addedAdmin.getAdminid());
+          ComplaintResponse complaintResponse = new ComplaintResponse(response, addedAdmin.getName(), faqs, addedAdmin.getAdminid(), newComplaint.getComplaintid());
 
           return ResponseEntity.ok(complaintResponse);
 
