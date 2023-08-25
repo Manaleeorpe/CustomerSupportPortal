@@ -43,6 +43,22 @@ nlu:
       - How to post a complaint?
       - Where to post a complaint?
 
+  - intent: post_complaint_yes
+    examples: |
+      - Yes
+      - Yes, I have logged in
+      - Yes, I am already logged in
+      - Now, I have logged in as a customer
+      - I have logged in, now how can I post a complaint?
+      - Now, I have logged in, so tell me how can I post a complaint?
+
+  - intent: post_complaint_no
+    examples: |
+      - No
+      - No, I have not yet logged
+      - No, I am not logged in
+      - No, I should I log in?
+
   - intent: complaint
     examples: |
       - In how many days issues are resolved?
@@ -50,6 +66,21 @@ nlu:
       - How can I know that my complaint is registered or not?
       - What will happen after I post a complaint?
       - Steps after posting a complaint
+
+  - intent: view_complaint
+    examples: |
+      - How can I view my complaints?
+      - Where can I find my added complaints?
+      - Give me list of my previous complaints
+      - Where to check the status of all my complaints
+
+  - intent: update_profile
+    examples: |
+      - How to update my profile?
+      - How can I update my details?
+      - Where can I go to update my profile/details?
+      - I want to change my details
+      - How to change profile details
 
 pipeline:
   - name: WhitespaceTokenizer

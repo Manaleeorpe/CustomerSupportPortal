@@ -48,7 +48,7 @@ import com.example.demo.response.UserInfoResponse;
 import com.example.demo.security.jwt.JwtUtils;
 import com.example.demo.security.services.UserDetailsImpl;
 
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
 @RestController
 @RequestMapping("/auth/admin")
 public class AdminController {

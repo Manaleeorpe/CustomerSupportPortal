@@ -31,7 +31,6 @@ public class AdminService {
             existingAdmin.setName(updatedAdmin.getName());
             existingAdmin.setEmail(updatedAdmin.getEmail());
             existingAdmin.setPhone_number(updatedAdmin.getPhone_number());
-            existingAdmin.setAdminType(updatedAdmin.getAdminType());
 
             // Update other fields as needed
 
@@ -47,6 +46,7 @@ public class AdminService {
         if (existingComplaint != null) {
             existingComplaint.setDate(new Date());
             existingComplaint.setStatus(updatedComplaint.getStatus());
+            existingComplaint.setAdminComments(updatedComplaint.getAdminComments());
 
             // Update other fields as needed
 

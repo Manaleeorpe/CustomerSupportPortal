@@ -31,40 +31,98 @@ public class Complaint {
     private String status;
 
     private String description; // New field for complaint description
-    
-    private Double rating; // New field for complaint rating
-    
+
+    private Double rating; // New field for complaDouble rating
+
     private Long adminid;
 
-    public Long getAdminid() {
-		return adminid;
-	}
+    private String customerName;
 
-	public void setAdminid(Long adminid) {
-		this.adminid = adminid;
-	}
+    private String AdminComments;
 
-	public Complaint() {
+    public String getAdminComments() {
+        return AdminComments;
+    }
+
+    public void setAdminComments(String adminComments) {
+        AdminComments = adminComments;
+    }
+
+    public String getCustomerName() {
+        return customerName;
     }
 
     public Complaint(Long complaintid, @NotNull(message = "Complaint type is mandatory") String complaintType,
-			@NotNull(message = "Customer ID is mandatory") Long customerid,
-			@NotNull(message = "Date is mandatory") Date date, @NotNull(message = "Status is mandatory") String status,
-			String description, Double rating, Long adminid, Customer customer, Admin admin) {
-		super();
-		this.complaintid = complaintid;
-		this.complaintType = complaintType;
-		this.customerid = customerid;
-		this.date = date;
-		this.status = status;
-		this.description = description;
-		this.rating = rating;
-		this.adminid = adminid;
-		this.customer = customer;
-		this.admin = admin;
-	}
+                     @NotNull(message = "Customer ID is mandatory") Long customerid,
+                     @NotNull(message = "Date is mandatory") Date date, @NotNull(message = "Status is mandatory") String status,
+                     String description, Double rating, Long adminid, String customerName, String adminComments,
+                     Customer customer, Admin admin) {
+        super();
+        this.complaintid = complaintid;
+        this.complaintType = complaintType;
+        this.customerid = customerid;
+        this.date = date;
+        this.status = status;
+        this.description = description;
+        this.rating = rating;
+        this.adminid = adminid;
+        this.customerName = customerName;
+        AdminComments = adminComments;
+        this.customer = customer;
+        this.admin = admin;
+    }
 
-	public Complaint(Long complaintid, String complaintType, Long customerid, Date date, String status, String description, Double rating) {
+    public void setCustomerName(String customerName) {
+        this.customerName = customerName;
+    }
+
+    public Complaint(Long complaintid, @NotNull(message = "Complaint type is mandatory") String complaintType,
+                     @NotNull(message = "Customer ID is mandatory") Long customerid,
+                     @NotNull(message = "Date is mandatory") Date date, @NotNull(message = "Status is mandatory") String status,
+                     String description, Double rating, Long adminid, String customerName, Customer customer, Admin admin) {
+        super();
+        this.complaintid = complaintid;
+        this.complaintType = complaintType;
+        this.customerid = customerid;
+        this.date = date;
+        this.status = status;
+        this.description = description;
+        this.rating = rating;
+        this.adminid = adminid;
+        this.customerName = customerName;
+        this.customer = customer;
+        this.admin = admin;
+    }
+
+    public Long getAdminid() {
+        return adminid;
+    }
+
+    public void setAdminid(Long adminid) {
+        this.adminid = adminid;
+    }
+
+    public Complaint() {
+    }
+
+    public Complaint(Long complaintid, @NotNull(message = "Complaint type is mandatory") String complaintType,
+                     @NotNull(message = "Customer ID is mandatory") Long customerid,
+                     @NotNull(message = "Date is mandatory") Date date, @NotNull(message = "Status is mandatory") String status,
+                     String description, Double rating, Long adminid, Customer customer, Admin admin) {
+        super();
+        this.complaintid = complaintid;
+        this.complaintType = complaintType;
+        this.customerid = customerid;
+        this.date = date;
+        this.status = status;
+        this.description = description;
+        this.rating = rating;
+        this.adminid = adminid;
+        this.customer = customer;
+        this.admin = admin;
+    }
+
+    public Complaint(Long complaintid, String complaintType, Long customerid, Date date, String status, String description, Double rating) {
         this.complaintid = complaintid;
         this.complaintType = complaintType;
         this.customerid = customerid;
@@ -134,11 +192,11 @@ public class Complaint {
     @ManyToOne
     @JoinColumn(name = "customerid", insertable = false, updatable = false)
     private Customer customer;
-    
+
     @ManyToOne
     @JoinColumn(name = "adminid", insertable = false, updatable = false)
     private Admin admin;
-    
+
     public void setAdmin(Admin admin) {
         this.admin = admin;
         this.adminid = admin != null ? admin.getAdminid() : null;

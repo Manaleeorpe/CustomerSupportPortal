@@ -63,6 +63,12 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
       .antMatchers("/auth/admin/signin", "/auth/admin/signup").permitAll()
       .antMatchers(HttpMethod.POST, "/auth/customer/*/add-complaint").permitAll()
       .antMatchers("/api/test/**").permitAll()
+            .antMatchers("/auth/customer/getAllFaqs").permitAll()
+            .antMatchers("/auth/customer/getAllFaqs/{faqType}").permitAll()
+            .antMatchers("/auth/customer/chat").permitAll()
+            .antMatchers("/auth/customer/{customerid}/add-complaint").permitAll()
+            .antMatchers("/auth/customer/forgot-password").permitAll()
+            .antMatchers("/auth/customer/reset-password").permitAll()
       .antMatchers("/auth/customer/**").authenticated()
       .antMatchers("/auth/admin/**").authenticated()
       .anyRequest().authenticated();
