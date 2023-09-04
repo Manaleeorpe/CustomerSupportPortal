@@ -49,7 +49,6 @@ public class AdminServiceTest {
         updatedAdmin.setName("New Name");
         updatedAdmin.setEmail("new@example.com");
         updatedAdmin.setPhone_number("1234567890");
-        updatedAdmin.setAdminType("Technical Engineer");
 
         when(adminRepository.findById(adminId)).thenReturn(Optional.of(existingAdmin));
         when(adminRepository.save(any(Admin.class))).thenReturn(updatedAdmin);
@@ -60,7 +59,6 @@ public class AdminServiceTest {
         assertEquals("New Name", result.getName());
         assertEquals("new@example.com", result.getEmail());
         assertEquals("1234567890", result.getPhone_number());
-        assertEquals("Technical Engineer", result.getAdminType());
     }
 
     @Test

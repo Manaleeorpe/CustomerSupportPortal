@@ -18,10 +18,7 @@ public class ChatbotInteractService {
     private Map<String, String> responses;
     private String[] genericResponses = {
             "I'm not sure I understand. Can you please rephrase?",
-            "That's interesting. Could you tell me more?",
-            "I'm here to help. What else would you like to know?",
-            "I'm learning new things every day. Could you provide more details?",
-            "I appreciate your input. Is there anything else you'd like to discuss?"
+            "I'm learning new things every day. Could you provide more details?"
     };
 
     public ChatbotInteractService() {
@@ -32,8 +29,12 @@ public class ChatbotInteractService {
         responses.put("working_hours", "Our working hours are from 9 AM to 5 PM, Monday to Friday.");
         responses.put("services_offered", "We offer a range of banking services, including account management, loans, and online banking.");
         responses.put("open_new_account", "To open a new bank account, visit the nearest bank.");
-        responses.put("post_complaint", "To post a complaint, just go to the complaints section, or refer to our FAQs on how to post a complaint.");
+        responses.put("post_complaint", "Are you logged in as a customer?");
+        responses.put("post_complaint_yes", "Now, go to the Complaints section using the following link - <a href=\"http://localhost:3000/AddComplaints\">www.customerportal.addcomplaint.com</a>.");
+        responses.put("post_complaint_no", "Then log in as a customer first, as this procedure requires u to be authenticated ,i will be able to assist u further after you logged in.");
         responses.put("complaint", "After we receive a complaint, a mail is sent to you regarding the same and the issue is resolved within 2 days. You will receive a mail after your issue has been resolved.");
+        responses.put("view_complaint", "To check the status of your complaint(s), you have to login as a customer first and then click on <a href=\"http://localhost:3000/ViewComplaints\">www.customerportal.viewcomplaints.com</a>.");
+        responses.put("update_profile", "For updating your profile details, click on the following link - <a href=\"http://localhost:3000/updateUser\">www.customerportal.updateprofile.com</a>.");
     }
 
     public String generateResponse(String userInput) {
@@ -77,4 +78,3 @@ public class ChatbotInteractService {
 
     }
 }
-

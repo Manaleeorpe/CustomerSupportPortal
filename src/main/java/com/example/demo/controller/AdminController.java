@@ -1,9 +1,10 @@
 package com.example.demo.controller;
 
 import java.io.File;
-
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import javax.validation.Valid;
@@ -28,6 +29,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.demo.Repository.AdminComplaintHistoryRepository;
 import com.example.demo.Repository.AdminRepository;
 import com.example.demo.Repository.ComplaintRepository;
 import com.example.demo.Repository.CustomerRepository;
@@ -37,6 +39,7 @@ import com.example.demo.Service.ComplaintService;
 import com.example.demo.Service.EmailService;
 import com.example.demo.Service.TokenService;
 import com.example.demo.entity.Admin;
+import com.example.demo.entity.AdminComplaintHistory;
 import com.example.demo.entity.Complaint;
 import com.example.demo.entity.Customer;
 import com.example.demo.entity.FAQ;
@@ -62,6 +65,9 @@ public class AdminController {
 	  
 	  @Autowired
 	  ComplaintRepository complaintRepository;
+	  
+	  @Autowired
+	  AdminComplaintHistoryRepository AdminComplaintHistoryRepository;
 
 	  @Autowired
 	  PasswordEncoder encoder;
@@ -125,11 +131,9 @@ public class AdminController {
 	    		  							signUpRequest.getUsername(),
 	                                        signUpRequest.getEmail(),
 	                                        signUpRequest.getPhone_number(),
-	                                        signUpRequest.getAdminType(),
 	                                        encoder.encode(signUpRequest.getPassword())
 	                                        );
 	      adminRepository.save(admin);
-	      System.out.println("Admin Type: " + signUpRequest.getAdminType());
 
 	      return ResponseEntity.ok(new MessageResponse("Admin registered successfully!"));
 	  }
@@ -177,6 +181,11 @@ public class AdminController {
 
 			Complaint existingComplaint = adminService.updateComplaintDetails(complaintid, updatedComplaint);
 			
+			//admin - complaint table
+	          AdminComplaintHistory adminComplaintHistory = AdminComplaintHistoryRepository.findById(existingComplaint.getComplaintid()).orElse(null);
+	          adminComplaintHistory.setStatus(existingComplaint.getStatus());
+	          AdminComplaintHistoryRepository.save(adminComplaintHistory);
+			
 
 			if (existingComplaint != null) {
 				// Get the customer associated with the complaint
@@ -191,7 +200,7 @@ public class AdminController {
 							"\n" +
 							"We are pleased to inform you that your complaint with Complaint ID: " + complaintid + " has been resolved.\n" +
 							"\n" +
-							"Our team led by has successfully addressed your concerns. We hope the resolution meets your satisfaction.\n" +
+							"Our team has successfully addressed your concerns.\n Admin suggestions: " + complaint.getAdminComments() + ", we hope the resolution meets your satisfaction.\n" +
 							"\n" +
 							"Thank you for your patience and understanding throughout this process.\n" +
 							"\n" +
@@ -300,8 +309,64 @@ public class AdminController {
 			return ResponseEntity.notFound().build();
 		}
 	}
-		//forgot password
-		
+	
+	@GetMapping("/complaint-type-counts")
+	  public ResponseEntity<Map<String, Long>> getComplaintTypeCounts() {
+	      List<Complaint> complaints = complaintRepository.findAll();
+	      Map<String, Long> complaintTypeCounts = new HashMap<>();
+	      for (Complaint complaint : complaints) {
+	          String complaintType = complaint.getComplaintType();
+	          complaintTypeCounts.put(complaintType, complaintTypeCounts.getOrDefault(complaintType, 0L) + 1);
+	      }
+
+	      return ResponseEntity.ok(complaintTypeCounts);
+	  }
+	
+	@GetMapping("/admin-complaint-counts")
+	public ResponseEntity<List<Map<String, Long>>> getAllAdminsComplaintCounts() {
+	    List<Long> adminids = List.of(1L, 2L, 3L, 4L, 5L); 
+
+	    List<Map<String, Long>> allAdminsComplaintCounts = new ArrayList<>();
+	    
+	    for (Long adminid : adminids) {
+	        List<AdminComplaintHistory> adminComplaints = AdminComplaintHistoryRepository.findByAdminid(adminid);
+	        
+	        Map<String, Long> adminComplaintCounts = new HashMap<>();
+	        adminComplaintCounts.put("adminid", adminid);
+	        
+	        long pendingComplaints = 0;
+	        long resolvedComplaints = 0;
+	        
+	        for (AdminComplaintHistory admincomplaint : adminComplaints) {
+	            String status = admincomplaint.getStatus();
+	            if ("Pending".equals(status)) {
+	                pendingComplaints++;
+	            } else if ("Resolved".equals(status)) {
+	                resolvedComplaints++;
+	            }
+	            
+	            adminComplaintCounts.put(status, adminComplaintCounts.getOrDefault(status, 0L) + 1);
+	        }
+	        
+	        long totalComplaints = pendingComplaints + resolvedComplaints;
+	        adminComplaintCounts.put("TotalComplaints", totalComplaints);
+	        
+	        if (totalComplaints > 0) {
+	            long resolvedPercentage = (resolvedComplaints * 100L) / totalComplaints;
+	            adminComplaintCounts.put("ResolvedPercentage", resolvedPercentage);
+	        } else {
+	            adminComplaintCounts.put("ResolvedPercentage", 0L);
+	        }
+	        
+	        allAdminsComplaintCounts.add(adminComplaintCounts);
+	    }
+	    
+	    return ResponseEntity.ok(allAdminsComplaintCounts);
+	}
+
+
+	
+		//forgot password	
 		 @PostMapping("/forgot-password")
 		  public ResponseEntity<?> adminForgotPassword(@RequestParam String email) {
 		      Admin admin = adminRepository.findByEmail(email);

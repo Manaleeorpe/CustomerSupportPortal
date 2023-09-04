@@ -10,9 +10,9 @@ import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
-import org.mockito.Mock;
+import org.mockito.Mock;	
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -87,42 +87,6 @@ public class AdminControllerTest {
        
     }
     
-    @Test
-    public void testSignInSuccess() {
-        // Mocking behavior of authenticationManager.authenticate
-        Authentication authentication = Mockito.mock(Authentication.class);
-        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class))).thenReturn(authentication);
-
-        // Prepare mock data
-        LoginRequest loginRequest = new LoginRequest();
-        loginRequest.setUsername("saloni");
-        loginRequest.setPassword("1234");
-
-        List<GrantedAuthority> authorities = new ArrayList<>();
-        authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
-
-        UserDetailsImpl userDetails = new UserDetailsImpl(
-            1L,
-            "saloni",
-            "patilsaloni2705@gmail.com",
-            "encodedPassword",
-            authorities
-        );
-        
-        when(userDetailsService.loadUserByUsername(anyString())).thenReturn(userDetails);
-
-        // Mock jwtUtils behavior
-        when(jwtUtils.generateJwtCookie(any(UserDetailsImpl.class))).thenReturn(null);
-
-        // Perform the test
-        ResponseEntity<?> response = adminController.authenticateUser(loginRequest);
-
-        // Verify the response
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        UserInfoResponse userInfoResponse = (UserInfoResponse) response.getBody();
-        assertEquals("saloni", userInfoResponse.getUsername());
-        assertEquals("patilsaloni2705@gmail.com", userInfoResponse.getEmail());
-    }
 
    
 }

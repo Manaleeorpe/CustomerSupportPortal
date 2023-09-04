@@ -8,7 +8,6 @@ import java.util.stream.Collectors;
 
 import javax.validation.Valid;
 
-import com.example.demo.Service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -30,11 +29,21 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.demo.Repository.AdminComplaintHistoryRepository;
 import com.example.demo.Repository.AdminRepository;
 import com.example.demo.Repository.ComplaintRepository;
 import com.example.demo.Repository.CustomerRepository;
 import com.example.demo.Repository.FAQRepository;
+import com.example.demo.Service.AdminService;
+import com.example.demo.Service.ChatbotFAQsService;
+import com.example.demo.Service.ChatbotInteractService;
+import com.example.demo.Service.ChatbotService;
+import com.example.demo.Service.ComplaintService;
+import com.example.demo.Service.CustomerService;
+import com.example.demo.Service.EmailService;
+import com.example.demo.Service.TokenService;
 import com.example.demo.entity.Admin;
+import com.example.demo.entity.AdminComplaintHistory;
 import com.example.demo.entity.Complaint;
 import com.example.demo.entity.Customer;
 import com.example.demo.entity.FAQ;
@@ -63,6 +72,9 @@ public class CustomerController {
   
   @Autowired
   AdminRepository adminRepository;
+  
+  @Autowired
+  AdminComplaintHistoryRepository AdminComplaintHistoryRepository;
 
   @Autowired
   PasswordEncoder encoder;
@@ -165,7 +177,7 @@ public class CustomerController {
 
       if (customer != null) {
           // Determine severity level and generate response using chatbot service
-          String severityLevel = chatbotService.determineSeverity(complaint.getDescription());
+    	  String severityLevel = chatbotService.determineSeverity(complaint.getDescription());
           String response = chatbotService.processComplaint(complaint.getDescription());
 
           //get FAQ from chatbotFAQs service
@@ -180,7 +192,7 @@ public class CustomerController {
           newComplaint.setStatus("Pending");
           newComplaint.setDescription(complaint.getDescription());
           newComplaint.setCustomerName(customer.getName());
-
+          
           // Save the new complaint entity to the database
           complaintRepository.save(newComplaint);
           Admin addedAdmin = complaintService.AddComplaintToAdmin(newComplaint.getComplaintid());
@@ -188,8 +200,20 @@ public class CustomerController {
           if (addedAdmin == null) {
               return ResponseEntity.badRequest().body(new MessageResponse("Failed to associate complaint with admin."));
           }
+                    
+          int hours = customerService.getHours(severityLevel);
+          
+          //admin - complaint table
+          AdminComplaintHistory adminComplaintHistory = new AdminComplaintHistory();
+          adminComplaintHistory.setComplaintid(newComplaint.getComplaintid());
+          adminComplaintHistory.setComplaintType(newComplaint.getComplaintType());
+          adminComplaintHistory.setStatus(newComplaint.getStatus());
+          adminComplaintHistory.setAdminid(newComplaint.getAdminid());
+          adminComplaintHistory.setRating(newComplaint.getRating());
+          
+          AdminComplaintHistoryRepository.save(adminComplaintHistory);
 
-          // Send email to the customer
+          
           String to = customer.getEmail();
           String from = "customerportal45@gmail.com";
           String subject = "Acknowledgement of Your Recent Complaint";
@@ -197,7 +221,7 @@ public class CustomerController {
                   "\n" +
                   "We hope this email finds you well. We wanted to take a moment to acknowledge the complaint you recently submitted on our website with Complaint ID : " + newComplaint.getComplaintid() + ". Your feedback is important to us, and we're committed to addressing your concerns as swiftly as possible.\n" +
                   "\n" +
-                  "We are reaching out to let you know that your complaint is currently under review by our dedicated team led by " + addedAdmin.getName() + ". We understand the importance of timely resolution, and please be assured that we are actively working on a solution.\n" +
+                  "We are reaching out to let you know that your complaint is currently under review by our dedicated team led by " + addedAdmin.getName() + ". We understand the importance of timely resolution, and please be assured that we will find a solution within "+hours + " hours"  +".\n" +
                   "\n" +
                   "We take your concerns seriously and are committed to addressing them promptly. Our customer support team, led by " + addedAdmin.getName() + ", has been informed about your complaint and is already working on finding a solution. We will strive to resolve this matter to your satisfaction and ensure that such issues do not recur in the future.\n" +
                   "\n" +
@@ -265,11 +289,18 @@ public class CustomerController {
   @PreAuthorize("hasRole('CUSTOMER')")
   public ResponseEntity<?> rateComplaint(@RequestBody Double rating,@PathVariable Long complaintid) {
       Complaint complaint = complaintRepository.findById(complaintid).orElse(null);
+      
+    
 
       if (complaint != null) {
     	  if (complaint.getStatus().equals("Resolved")) {
               complaint.setRating(rating);
               complaintRepository.save(complaint);
+              
+            //admin - complaint table
+              AdminComplaintHistory adminComplaintHistory = AdminComplaintHistoryRepository.findById(complaint.getComplaintid()).orElse(null);
+              adminComplaintHistory.setRating(complaint.getRating());
+              AdminComplaintHistoryRepository.save(adminComplaintHistory);
           }
           return ResponseEntity.ok(new MessageResponse("Complaints rated successfully!"));
       } else {
@@ -291,6 +322,11 @@ public class CustomerController {
                     complaintRepository.save(complaint);
                     complaintService.unassignAdmin(complaintid);
                     complaintService.CalculateHours();
+                    
+	                  //admin - complaint table
+	  	  	          AdminComplaintHistory adminComplaintHistory = AdminComplaintHistoryRepository.findById(complaint.getComplaintid()).orElse(null);
+	  	  	          adminComplaintHistory.setStatus(complaint.getStatus());
+	  	  	          AdminComplaintHistoryRepository.save(adminComplaintHistory);
                     return ResponseEntity.ok(new MessageResponse("Complaint cancelled successfully!"));
                 } else {
                     return ResponseEntity.badRequest().body(new MessageResponse("Cannot cancel this complaint."));

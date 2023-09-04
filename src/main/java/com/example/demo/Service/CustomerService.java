@@ -28,5 +28,15 @@ public class CustomerService {
             return null; // Customer not found
         }
     }
+
+	public int getHours(String severityLevel) {
+		if(severityLevel == "Level 1") {
+			return 2;
+		} else if (severityLevel == "Level 2") {
+			return 24;
+		} else {
+			return 48;
+	 }
+	}
 }
 

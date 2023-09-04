@@ -38,7 +38,6 @@ public class Admin {
 		this.email = email;
 		Phone_number = phone_number;
 		this.password = password;
-		AdminType = adminType;
 	}
 
 	public List<Complaint> getComplaints() {
@@ -54,14 +53,13 @@ public class Admin {
 
     public Admin(@NotNull(message = "First name is mandatory") String name,
 			@NotNull(message = "Email is mandatory") @Email(message = "Require email format") String email,
-			@Size(max = 10, min = 10, message = "Require only 10 digits") String Phone_number, String AdminType,
+			@Size(max = 10, min = 10, message = "Require only 10 digits") String Phone_number,
 			@NotNull(message = "Password is mandatory") String password, Long adminid) {
 		super();
 		this.adminid = adminid;
 		this.name = name;
 		this.email = email;
 		this.Phone_number = Phone_number;
-		this.AdminType = AdminType;
 		this.password = password;
 	}
 
@@ -107,7 +105,7 @@ public class Admin {
 
 	public Admin(Long adminid, @NotNull(message = "First name is mandatory") String name,
 			@NotNull(message = "Email is mandatory") @Email(message = "Require email format") String email,
-			@Size(max = 10, min = 10, message = "Require only 10 digits") String phone_number,String adminType,
+			@Size(max = 10, min = 10, message = "Require only 10 digits") String phone_number,
 			@NotNull(message = "Password is mandatory") String password) {
 		super();
 		this.adminid = adminid;
@@ -115,7 +113,6 @@ public class Admin {
 		this.email = email;
 		Phone_number = phone_number;
 		this.password = password;
-		AdminType = adminType;
 	}
 	@NotNull(message = "First name is mandatory")
     private String name;
@@ -130,9 +127,6 @@ public class Admin {
     @NotNull(message = "Password is mandatory")
     private String password;
 
-    // Additional adminType column for Admin
-    @Column(name = "admin_type")
-    private String AdminType;
 
     public Long getAdminid() {
         return adminid;
@@ -174,14 +168,6 @@ public class Admin {
         this.password = password;
     }
 
-    // Getter and Setter for the adminType field
-    public String getAdminType() {
-        return AdminType;
-    }
-
-    public void setAdminType(String AdminType) {
-        this.AdminType = AdminType;
-    }
     
     @Column(name = "complaint_hours")
     public int complaintHours;
