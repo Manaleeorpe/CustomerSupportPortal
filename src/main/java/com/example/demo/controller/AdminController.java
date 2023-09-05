@@ -382,69 +382,6 @@ public class AdminController {
 	    return ResponseEntity.ok(allAdminsComplaintCounts);
 	}
 	
-	@GetMapping("/admin-resolution-time")
-	public ResponseEntity<List<Map<String, Long>>> getAdminComplaintTime() {
-	    List<Long> adminids = List.of(1L, 2L, 3L, 4L, 5L);
-	    List<Map<String, Long>> allAdminsResolutionTime = new ArrayList<>();
-
-	    for (Long adminid : adminids) {
-	        List<AdminComplaintHistory> adminComplaints = AdminComplaintHistoryRepository.findByAdminidAndStatus(adminid, "Resolved");
-
-	        Map<String, Long> adminResolutionTime = new HashMap<>();
-	        adminResolutionTime.put("adminid", adminid);
-
-	        long resolvedComplaintsLevel1 = 0;
-	        long resolvedComplaintsLevel2 = 0;
-	        long resolvedComplaintsLevel3 = 0;
-	        double totalTimeLevel1 = 0.0;
-	        double totalTimeLevel2 = 0.0;
-	        double totalTimeLevel3 = 0.0;
-
-	        for (AdminComplaintHistory admincomplaint : adminComplaints) {
-	            Date startDate = admincomplaint.getStartDate();
-	            Date endDate = admincomplaint.getEndDate();
-
-	            // Calculate the time taken to resolve the complaint (in hours)
-	            long timeTakenHours = adminService.CalculateResolutionTime(startDate, endDate);
-
-	            String complaintType = admincomplaint.getComplaintType();
-
-	            // Calculate the maximum allowed resolution time for the complaint type
-	            Long maxResolutionTime = adminService.CalculateMaxTime(complaintType);
-
-	            // Cap the time taken at the maximum allowed resolution time
-	            double cappedTimeTaken = Math.min(timeTakenHours, maxResolutionTime);
-
-	            if ("Level 1".equals(complaintType)) {
-	                totalTimeLevel1 += cappedTimeTaken;
-	                resolvedComplaintsLevel1++;
-	            } else if ("Level 2".equals(complaintType)) {
-	                totalTimeLevel2 += cappedTimeTaken;
-	                resolvedComplaintsLevel2++;
-	            } else if ("Level 3".equals(complaintType)) {
-	                totalTimeLevel3 += cappedTimeTaken;
-	                resolvedComplaintsLevel3++;
-	            }
-	        }
-
-	        // Calculate the average resolution time for each level
-	        double averageResolutionTimeLevel1 = resolvedComplaintsLevel1 > 0 ? totalTimeLevel1 / resolvedComplaintsLevel1 : 0.0;
-	        double averageResolutionTimeLevel2 = resolvedComplaintsLevel2 > 0 ? totalTimeLevel2 / resolvedComplaintsLevel2 : 0.0;
-	        double averageResolutionTimeLevel3 = resolvedComplaintsLevel3 > 0 ? totalTimeLevel3 / resolvedComplaintsLevel3 : 0.0;
-
-	        adminResolutionTime.put("averageResolutionTimeLevel1", (long) averageResolutionTimeLevel1);
-	        adminResolutionTime.put("averageResolutionTimeLevel2", (long) averageResolutionTimeLevel2);
-	        adminResolutionTime.put("averageResolutionTimeLevel3", (long) averageResolutionTimeLevel3);
-
-	        allAdminsResolutionTime.add(adminResolutionTime);
-	    }
-
-	    return ResponseEntity.ok(allAdminsResolutionTime);
-	}
-
-
-	
-	
 
 	@GetMapping("/admin-complaints/{adminId}")
 	@PreAuthorize("hasRole('ADMIN')")
@@ -462,7 +399,8 @@ public class AdminController {
 	                Map<String, Object> complaintData = new HashMap<>();
 	                complaintData.put("customerId", complaint.getCustomerid());
 	                complaintData.put("complaintId", complaint.getComplaintid());
-	                complaintData.put("date",complaint.getDate());
+	                complaintData.put("StartDate",adminComplaint.getStartDate());
+	                complaintData.put("EndDate",adminComplaint.getEndDate());
 	                complaintData.put("complaintType", complaint.getComplaintType());
 	                complaintData.put("description", complaint.getDescription());
 	                complaintData.put("status", complaint.getStatus());
