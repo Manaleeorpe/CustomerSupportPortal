@@ -2,6 +2,7 @@ package com.example.demo.controller;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -184,6 +185,7 @@ public class AdminController {
 			//admin - complaint table
 	          AdminComplaintHistory adminComplaintHistory = AdminComplaintHistoryRepository.findById(existingComplaint.getComplaintid()).orElse(null);
 	          adminComplaintHistory.setStatus(existingComplaint.getStatus());
+	          adminComplaintHistory.setEndDate(new Date());
 	          AdminComplaintHistoryRepository.save(adminComplaintHistory);
 			
 
@@ -324,46 +326,156 @@ public class AdminController {
 	
 	@GetMapping("/admin-complaint-counts")
 	public ResponseEntity<List<Map<String, Long>>> getAllAdminsComplaintCounts() {
-	    List<Long> adminids = List.of(1L, 2L, 3L, 4L, 5L); 
+	    List<Long> adminids = List.of(1L, 2L, 3L, 4L, 5L);
 
 	    List<Map<String, Long>> allAdminsComplaintCounts = new ArrayList<>();
-	    
+
 	    for (Long adminid : adminids) {
 	        List<AdminComplaintHistory> adminComplaints = AdminComplaintHistoryRepository.findByAdminid(adminid);
-	        
+
 	        Map<String, Long> adminComplaintCounts = new HashMap<>();
 	        adminComplaintCounts.put("adminid", adminid);
-	        
+
 	        long pendingComplaints = 0;
 	        long resolvedComplaints = 0;
-	        
+	        long totalRating = 0;
+	        long totalComplaints = 0;
+
 	        for (AdminComplaintHistory admincomplaint : adminComplaints) {
+	            Double complaintRating = admincomplaint.getRating();
 	            String status = admincomplaint.getStatus();
+
+	            if (complaintRating != null) {
+	                // Only consider complaints with non-null ratings
+	                totalRating += complaintRating;
+	                totalComplaints++;
+	            }
+
 	            if ("Pending".equals(status)) {
 	                pendingComplaints++;
 	            } else if ("Resolved".equals(status)) {
 	                resolvedComplaints++;
 	            }
-	            
+
 	            adminComplaintCounts.put(status, adminComplaintCounts.getOrDefault(status, 0L) + 1);
 	        }
-	        
-	        long totalComplaints = pendingComplaints + resolvedComplaints;
+
 	        adminComplaintCounts.put("TotalComplaints", totalComplaints);
-	        
+
 	        if (totalComplaints > 0) {
 	            long resolvedPercentage = (resolvedComplaints * 100L) / totalComplaints;
 	            adminComplaintCounts.put("ResolvedPercentage", resolvedPercentage);
 	        } else {
 	            adminComplaintCounts.put("ResolvedPercentage", 0L);
 	        }
-	        
+
+	        if (totalComplaints > 0) {
+	            long averageRating = totalRating / totalComplaints;
+	            adminComplaintCounts.put("AverageRating", averageRating);
+	        } else {
+	            adminComplaintCounts.put("AverageRating", null);
+	        }
+
 	        allAdminsComplaintCounts.add(adminComplaintCounts);
 	    }
-	    
+
 	    return ResponseEntity.ok(allAdminsComplaintCounts);
 	}
+	
+	@GetMapping("/admin-resolution-time")
+	public ResponseEntity<List<Map<String, Long>>> getAdminComplaintTime() {
+	    List<Long> adminids = List.of(1L, 2L, 3L, 4L, 5L);
+	    List<Map<String, Long>> allAdminsResolutionTime = new ArrayList<>();
 
+	    for (Long adminid : adminids) {
+	        List<AdminComplaintHistory> adminComplaints = AdminComplaintHistoryRepository.findByAdminidAndStatus(adminid, "Resolved");
+
+	        Map<String, Long> adminResolutionTime = new HashMap<>();
+	        adminResolutionTime.put("adminid", adminid);
+
+	        long resolvedComplaintsLevel1 = 0;
+	        long resolvedComplaintsLevel2 = 0;
+	        long resolvedComplaintsLevel3 = 0;
+	        double totalTimeLevel1 = 0.0;
+	        double totalTimeLevel2 = 0.0;
+	        double totalTimeLevel3 = 0.0;
+
+	        for (AdminComplaintHistory admincomplaint : adminComplaints) {
+	            Date startDate = admincomplaint.getStartDate();
+	            Date endDate = admincomplaint.getEndDate();
+
+	            // Calculate the time taken to resolve the complaint (in hours)
+	            long timeTakenHours = adminService.CalculateResolutionTime(startDate, endDate);
+
+	            String complaintType = admincomplaint.getComplaintType();
+
+	            // Calculate the maximum allowed resolution time for the complaint type
+	            Long maxResolutionTime = adminService.CalculateMaxTime(complaintType);
+
+	            // Cap the time taken at the maximum allowed resolution time
+	            double cappedTimeTaken = Math.min(timeTakenHours, maxResolutionTime);
+
+	            if ("Level 1".equals(complaintType)) {
+	                totalTimeLevel1 += cappedTimeTaken;
+	                resolvedComplaintsLevel1++;
+	            } else if ("Level 2".equals(complaintType)) {
+	                totalTimeLevel2 += cappedTimeTaken;
+	                resolvedComplaintsLevel2++;
+	            } else if ("Level 3".equals(complaintType)) {
+	                totalTimeLevel3 += cappedTimeTaken;
+	                resolvedComplaintsLevel3++;
+	            }
+	        }
+
+	        // Calculate the average resolution time for each level
+	        double averageResolutionTimeLevel1 = resolvedComplaintsLevel1 > 0 ? totalTimeLevel1 / resolvedComplaintsLevel1 : 0.0;
+	        double averageResolutionTimeLevel2 = resolvedComplaintsLevel2 > 0 ? totalTimeLevel2 / resolvedComplaintsLevel2 : 0.0;
+	        double averageResolutionTimeLevel3 = resolvedComplaintsLevel3 > 0 ? totalTimeLevel3 / resolvedComplaintsLevel3 : 0.0;
+
+	        adminResolutionTime.put("averageResolutionTimeLevel1", (long) averageResolutionTimeLevel1);
+	        adminResolutionTime.put("averageResolutionTimeLevel2", (long) averageResolutionTimeLevel2);
+	        adminResolutionTime.put("averageResolutionTimeLevel3", (long) averageResolutionTimeLevel3);
+
+	        allAdminsResolutionTime.add(adminResolutionTime);
+	    }
+
+	    return ResponseEntity.ok(allAdminsResolutionTime);
+	}
+
+
+	
+	
+
+	@GetMapping("/admin-complaints/{adminId}")
+	@PreAuthorize("hasRole('ADMIN')")
+	public ResponseEntity<?> getAdminComplaints(@PathVariable Long adminId) {
+	    List<AdminComplaintHistory> adminComplaints = AdminComplaintHistoryRepository.findByAdminid(adminId);
+
+	    if (adminComplaints != null && !adminComplaints.isEmpty()) {
+	        List<Map<String, Object>> complaintsData = new ArrayList<>();
+
+	        for (AdminComplaintHistory adminComplaint : adminComplaints) {
+	            Long complaintId = adminComplaint.getComplaintid();
+	            Complaint complaint = complaintRepository.findById(complaintId).orElse(null);
+
+	            if (complaint != null) {
+	                Map<String, Object> complaintData = new HashMap<>();
+	                complaintData.put("customerId", complaint.getCustomerid());
+	                complaintData.put("complaintId", complaint.getComplaintid());
+	                complaintData.put("date",complaint.getDate());
+	                complaintData.put("complaintType", complaint.getComplaintType());
+	                complaintData.put("description", complaint.getDescription());
+	                complaintData.put("status", complaint.getStatus());
+	                complaintData.put("rating", complaint.getRating());
+	                complaintsData.add(complaintData);
+	            }
+	        }
+
+	        return ResponseEntity.ok(complaintsData);
+	    } else {
+	        return ResponseEntity.notFound().build();
+	    }
+	}
 
 	
 		//forgot password	

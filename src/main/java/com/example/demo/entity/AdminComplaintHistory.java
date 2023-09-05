@@ -1,5 +1,7 @@
 package com.example.demo.entity;
 
+import java.util.Date;
+
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
@@ -16,7 +18,38 @@ public class AdminComplaintHistory {
 	 private String status;
 	 private Long adminid;
 	 private Double rating;
+	 private Date StartDate;
+	 private Date EndDate;
 	 
+
+	public Date getStartDate() {
+		return StartDate;
+	}
+
+	public void setStartDate(Date startDate) {
+		StartDate = startDate;
+	}
+
+	public Date getEndDate() {
+		return EndDate;
+	}
+
+	public void setEndDate(Date endDate) {
+		EndDate = endDate;
+	}
+
+	public AdminComplaintHistory(Long complaintid, String complaintType, String status, Long adminid, Double rating,
+			Date startDate, Date endDate) {
+		super();
+		this.complaintid = complaintid;
+		this.complaintType = complaintType;
+		this.status = status;
+		this.adminid = adminid;
+		this.rating = rating;
+		StartDate = startDate;
+		EndDate = endDate;
+	}
+
 	public Double getRating() {
 		return rating;
 	}
@@ -55,15 +88,6 @@ public class AdminComplaintHistory {
 
 	public void setAdminid(Long adminid) {
 		this.adminid = adminid;
-	}
-
-	public AdminComplaintHistory(Long complaintid, String complaintType, String status, Long adminid, Double rating) {
-		super();
-		this.complaintid = complaintid;
-		this.complaintType = complaintType;
-		this.status = status;
-		this.adminid = adminid;
-		this.rating = rating;
 	}
 
 	public AdminComplaintHistory() {

@@ -210,6 +210,7 @@ public class CustomerController {
           adminComplaintHistory.setStatus(newComplaint.getStatus());
           adminComplaintHistory.setAdminid(newComplaint.getAdminid());
           adminComplaintHistory.setRating(newComplaint.getRating());
+          adminComplaintHistory.setStartDate(newComplaint.getDate());
           
           AdminComplaintHistoryRepository.save(adminComplaintHistory);
 
@@ -326,6 +327,7 @@ public class CustomerController {
 	                  //admin - complaint table
 	  	  	          AdminComplaintHistory adminComplaintHistory = AdminComplaintHistoryRepository.findById(complaint.getComplaintid()).orElse(null);
 	  	  	          adminComplaintHistory.setStatus(complaint.getStatus());
+	  	  	          adminComplaintHistory.setEndDate(new Date());
 	  	  	          AdminComplaintHistoryRepository.save(adminComplaintHistory);
                     return ResponseEntity.ok(new MessageResponse("Complaint cancelled successfully!"));
                 } else {

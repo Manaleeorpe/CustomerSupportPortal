@@ -10,5 +10,6 @@ public interface AdminComplaintHistoryRepository extends JpaRepository<AdminComp
 
 	List<AdminComplaintHistory> findByAdminid(Long adminid);
 	List<AdminComplaintHistory> findByStatus(String status);
+	 List<AdminComplaintHistory> findByAdminidAndStatus(Long adminid, String status);
 
 }

@@ -83,6 +83,26 @@ public class AdminService {
         }
     }
     
+    public long CalculateResolutionTime(Date StartDate, Date EndDate) {
+    	// Calculate the time difference in milliseconds
+        long timeDifferenceMs = EndDate.getTime() - StartDate.getTime();
+        
+        // Calculate the time difference in hours
+        long timeDifferenceHours = timeDifferenceMs / (1000 * 60 * 60);
+        
+            return timeDifferenceHours;
+    }
+    
+    public long CalculateMaxTime(String complaintType) {
+    	if(complaintType == "Level 1") {
+    		return 2L;
+    	} else if(complaintType == "Level 2") {
+    		return 24L;
+    	} else {
+    		return 48L;
+    	}
+    }
+    
     
 
     }
