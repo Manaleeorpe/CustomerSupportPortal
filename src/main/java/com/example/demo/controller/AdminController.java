@@ -168,6 +168,25 @@ public class AdminController {
 				return ResponseEntity.notFound().build(); // Admin not found
 			}
 		}
+	  
+	  @PutMapping("/Inprogress/{complaintid}")
+		@PreAuthorize("hasRole('ADMIN')")
+		public ResponseEntity<MessageResponse> updateComplaint1(@PathVariable Long complaintid, @RequestBody Complaint updatedComplaint) {
+			Complaint complaint = complaintRepository.findById(complaintid).orElse(null);
+
+			Complaint existingComplaint = adminService.updateComplaintDetails1(complaintid, updatedComplaint.getStatus());
+			
+			//admin - complaint table
+	          AdminComplaintHistory adminComplaintHistory = AdminComplaintHistoryRepository.findById(existingComplaint.getComplaintid()).orElse(null);
+	          adminComplaintHistory.setStatus(existingComplaint.getStatus());
+	          AdminComplaintHistoryRepository.save(adminComplaintHistory);
+			
+			if (existingComplaint != null) {
+				return ResponseEntity.ok(new MessageResponse("Complaint is In Progress"));
+			} else {
+				return ResponseEntity.notFound().build(); // Complaint not found
+			}
+		}
 
 	  @PutMapping("/updateComplaint/{complaintid}")
 		@PreAuthorize("hasRole('ADMIN')")
@@ -175,7 +194,7 @@ public class AdminController {
 			Complaint complaint = complaintRepository.findById(complaintid).orElse(null);
 			String previousStatus = complaint.getStatus();
 
-			if (previousStatus.equals("Pending") && updatedComplaint.getStatus().equals("Resolved")) {
+			if (previousStatus.equals("In Progress") && updatedComplaint.getStatus().equals("Resolved")) {
 				complaintService.unassignAdmin(complaintid);
 				complaintService.CalculateHours();
 			}
@@ -226,6 +245,30 @@ public class AdminController {
 				return ResponseEntity.notFound().build(); // Complaint not found
 			}
 		}
+	  //get progress
+	  @GetMapping("/getProgress")
+		@PreAuthorize("hasRole('ADMIN')")
+		public ResponseEntity<?> getProgress() {
+		  Long Pending = AdminComplaintHistoryRepository.countByStatus("Pending");
+		  Long InProgress = AdminComplaintHistoryRepository.countByStatus("In Progress");
+		  Long Resolved = AdminComplaintHistoryRepository.countByStatus("Resolved");
+		  Long Cancelled = AdminComplaintHistoryRepository.countByStatus("Cancelled");
+		  
+		  Map<String, Long> ComplaintType = new HashMap<>();
+		  
+		  ComplaintType.put("Pending", Pending);
+		  ComplaintType.put("InProgress", InProgress);
+		  ComplaintType.put("Resolved", Resolved);
+		  ComplaintType.put("Cancelled", Cancelled);
+
+	        if (!ComplaintType.isEmpty()) {
+	            return ResponseEntity.ok(ComplaintType);
+	        } else {
+	            return ResponseEntity.notFound().build();
+	        }
+
+		}
+
 	@PostMapping("/addFaq")
 		@PreAuthorize("hasRole('ADMIN')")
 		public ResponseEntity<?> addFaq(@RequestBody FAQ faq) {

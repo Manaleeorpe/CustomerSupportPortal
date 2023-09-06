@@ -317,8 +317,9 @@ public class CustomerController {
 
             if (optionalComplaint.isPresent()) {
                 Complaint complaint = optionalComplaint.get();
+                boolean statusOk = complaint.getStatus().equals("Pending") || complaint.getStatus().equals("In Progress");
 
-                if (complaint.getCustomerid().equals(customerid) && complaint.getStatus().equals("Pending")) {
+                if (complaint.getCustomerid().equals(customerid) && statusOk) {
                     complaint.setStatus("Cancelled");
                     complaintRepository.save(complaint);
                     complaintService.unassignAdmin(complaintid);

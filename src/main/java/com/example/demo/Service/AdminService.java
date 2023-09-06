@@ -54,6 +54,21 @@ public class AdminService {
             return null; // Complaint not found
         }
     }
+    
+    public Complaint updateComplaintDetails1(Long complaintid, String status) {
+        Complaint existingComplaint = complaintRepository.findById(complaintid).orElse(null);
+
+        if (existingComplaint != null) {
+            existingComplaint.setDate(new Date());
+            existingComplaint.setStatus(status);
+
+            // Update other fields as needed
+
+            return complaintRepository.save(existingComplaint);
+        } else {
+            return null; // Complaint not found
+        }
+    }
 
     public FAQ updateFaqDetails(Long faqId, FAQ updatedFAQ) {
         FAQ existingFAQ = faqRepository.findById(faqId).orElse(null);
