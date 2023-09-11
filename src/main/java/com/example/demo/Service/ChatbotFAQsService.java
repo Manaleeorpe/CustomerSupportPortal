@@ -117,6 +117,7 @@ public class ChatbotFAQsService {
 	    }
 
 	    private boolean containsPartialKeywords(String text, String[] keywords) {
+	    	text = text.replaceAll("[^a-zA-Z]", "");
 	        String[] textWords = text.toLowerCase().split("\\s+");
 
 	        for (String keyword : keywords) {

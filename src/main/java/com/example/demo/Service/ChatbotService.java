@@ -37,7 +37,7 @@ public class ChatbotService {
 
     public String determineSeverity(String complaintDescription) {
         String[] level1Keywords = {
-            "account login issues", "incorrect transaction amount",
+            "account login issues", 
             "simple balance inquiries", "atm withdrawal issues",
             "card activation requests", "basic online banking questions",
             "address or contact information updates", "routine account information updates"
@@ -46,30 +46,37 @@ public class ChatbotService {
             "unauthorized transactions investigation", "transaction disputes requiring verification",
             "minor card issues", "non-urgent loan inquiries",
             "moderate technical issues on the bank's app or website",
-            "routine account maintenance requests", "minor account security concerns"
+            "routine account maintenance requests", "minor account security concerns","account security breaches",
+            "complex transaction disputes requiring investigation"
         };
         String[] level3Keywords = {
             "identity theft or major fraud cases", "complex transaction disputes requiring investigation",
             "account compromise requiring thorough examination", "lost or stolen card cases",
             "urgent loan or mortgage inquiries", "technical issues impacting multiple customers",
-            "account closure requests", "account security breaches",
-            "major billing or fee disputes"
+            "account closure requests",
+            "major billing or fee disputes","incorrect transaction amount"
         };
+        
+        int level1 = containsPartialKeywords(complaintDescription, level1Keywords);
+        int level2 = containsPartialKeywords(complaintDescription, level2Keywords);
+        int level3 = containsPartialKeywords(complaintDescription, level3Keywords);
 
-        if (containsPartialKeywords(complaintDescription, level3Keywords)) {
-            return "Level 3";
-        } else if (containsPartialKeywords(complaintDescription, level2Keywords)) {
-            return "Level 2";
-        } else if (containsPartialKeywords(complaintDescription, level1Keywords)) {
+        if (level1 > level2 && level1 > level3) {
             return "Level 1";
+        } else if (level2 > level3 && level2 > level1) {
+            return "Level 2";
+        } else if (level3 > level1 && level3 > level2) {
+            return "Level 3";
         } else {
-            return "Level 1"; // Default to Level 1
+            return "Level 2"; // Default to Level 1
         }
     }
 
-    private boolean containsPartialKeywords(String text, String[] keywords) {
+    private int containsPartialKeywords(String text, String[] keywords) {
+    	text = text.replaceAll("[^a-zA-Z]", "");
         String[] textWords = text.toLowerCase().split("\\s+");
-
+       
+        
         for (String keyword : keywords) {
             String[] keywordWords = keyword.toLowerCase().split("\\s+");
             int wordMatchCount = 0;
@@ -84,11 +91,9 @@ public class ChatbotService {
             }
 
             // Adjust the threshold as needed (e.g., 2 or 3) based on your requirement
-            if (wordMatchCount >= 2) {
-                return true;
-            }
+            return wordMatchCount;
         }
-        return false;
+        return 0;
     }
 
 
